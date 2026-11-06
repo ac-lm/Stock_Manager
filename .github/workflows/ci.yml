@@ -1,0 +1,120 @@
+# Verifica en cada PR que el sistema compile y arranque con las versiones
+# actuales y futuras del servidor: Postgres 15 y 17, Tomcat 10.1 y 11, Node 22 y 26.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  backend:
+    name: Backend (Postgres ${{ matrix.postgres }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: ["15", "17"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_DB: taller
+          POSTGRES_USER: taller
+          POSTGRES_PASSWORD: taller
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U taller"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/taller
+      SPRING_DATASOURCE_USERNAME: taller
+      SPRING_DATASOURCE_PASSWORD: taller
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - name: Compilar, probar y empaquetar
+        run: ./mvnw -B verify
+      - name: Guardar el WAR para probarlo en Tomcat
+        if: matrix.postgres == '15'
+        uses: actions/upload-artifact@v4
+        with:
+          name: war
+          path: backend/target/*.war
+
+  tomcat:
+    name: Despliegue en Tomcat ${{ matrix.tomcat }}
+    needs: backend
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tomcat: ["10.1", "11.0"]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: taller
+          POSTGRES_USER: taller
+          POSTGRES_PASSWORD: taller
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U taller"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: war
+          path: war
+      - name: Levantar Tomcat ${{ matrix.tomcat }} con el WAR
+        run: |
+          docker run -d --name tomcat --network host \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/taller \
+            -e SPRING_DATASOURCE_USERNAME=taller \
+            -e SPRING_DATASOURCE_PASSWORD=taller \
+            -v "$PWD/war":/tmp/war \
+            tomcat:${{ matrix.tomcat }}-jdk17 \
+            sh -c 'cp /tmp/war/*.war /usr/local/tomcat/webapps/ROOT.war && catalina.sh run'
+      - name: Esperar a que Spring arranque
+        run: |
+          for i in $(seq 1 60); do
+            if docker logs tomcat 2>&1 | grep -qE "Started .* in [0-9.]+ seconds"; then
+              echo "La aplicación arrancó en Tomcat ${{ matrix.tomcat }}"; exit 0
+            fi
+            if docker logs tomcat 2>&1 | grep -qE "APPLICATION FAILED TO START|Application run failed"; then
+              break
+            fi
+            sleep 3
+          done
+          docker logs tomcat
+          echo "La aplicación no arrancó en Tomcat ${{ matrix.tomcat }}"; exit 1
+
+  frontend:
+    name: Frontend (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22", "26"]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Armar el empaquetado estático
+        run: npm run build
