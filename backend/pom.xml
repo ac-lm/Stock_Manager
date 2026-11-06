@@ -10,6 +10,7 @@
 	</parent>
 	<groupId>com.taller</groupId>
 	<artifactId>backend</artifactId>
+	<packaging>war</packaging>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>backend</name>
 	<description/>
@@ -27,7 +28,6 @@
 		<url/>
 	</scm>
 	<properties>
-		<packaging>war</packaging>
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>

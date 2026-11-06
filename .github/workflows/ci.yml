@@ -50,6 +50,7 @@ jobs:
         with:
           name: war
           path: backend/target/*.war
+          if-no-files-found: error
 
   tomcat:
     name: Despliegue en Tomcat ${{ matrix.tomcat }}
