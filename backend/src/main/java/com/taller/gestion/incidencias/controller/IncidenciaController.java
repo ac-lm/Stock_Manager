@@ -21,12 +21,12 @@ public class IncidenciaController {
         Incidencia incidencia = incidenciaService.crearIncidencia(dto);
 
         IncidenciaResponseDTO response = new IncidenciaResponseDTO();
-        response.setIdIncidencia(incidencia.getIdIncidencia());
+        response.setId_incidencia(incidencia.getId_incidencia());
         response.setTipoIncidencia(incidencia.getTipoIncidencia());
         response.setDescripcion(incidencia.getDescripcion());
         response.setEstado(incidencia.getEstado());
         if (incidencia.getInsumo() != null) {
-            response.setIdInsumo(incidencia.getInsumo().getIdInsumo());
+            response.setId_insumo(incidencia.getInsumo().getId_insumo());
         }
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);

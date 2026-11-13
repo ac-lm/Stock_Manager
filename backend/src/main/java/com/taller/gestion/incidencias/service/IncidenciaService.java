@@ -21,13 +21,13 @@ public class IncidenciaService {
     public Incidencia crearIncidencia(IncidenciaCreateDTO dto) {
         Incidencia nuevaIncidencia = new Incidencia();
 
-        if (dto.getIdInsumo() != null) {
-            Insumo insumo = insumoService.obtenerPorId(dto.getIdInsumo());
+        if (dto.getId_insumo() != null) {
+            Insumo insumo = insumoService.obtenerPorId(dto.getId_insumo());
             nuevaIncidencia.setInsumo(insumo);
         }
 
-        // if (dto.getIdProducto() != null) {
-        //     Producto producto = productoService.obtenerPorId(dto.getIdProducto());
+        // if (dto.getId_producto() != null) {
+        //     Producto producto = productoService.obtenerPorId(dto.getId_producto());
         //     nuevaIncidencia.setProducto(producto);
         // }
 

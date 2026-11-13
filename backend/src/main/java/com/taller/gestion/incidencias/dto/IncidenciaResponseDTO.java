@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class IncidenciaResponseDTO {
-    private Integer idIncidencia;
+    private Long id_incidencia;
     private String tipoIncidencia;
     private String descripcion;
     private String estado;
-    private Integer idInsumo;
+    private Long id_insumo;
 }

@@ -17,7 +17,7 @@ public class Incidencia {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_incidencia")
-    private Integer idIncidencia;
+    private Long id_incidencia;
 
     // Relación con Insumo (Módulo Catálogo)
     @ManyToOne(fetch = FetchType.LAZY)
