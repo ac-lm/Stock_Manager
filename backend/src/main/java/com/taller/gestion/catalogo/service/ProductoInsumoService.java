@@ -6,10 +6,10 @@ import com.taller.gestion.catalogo.dto.ProductoInsumoUpdateDTO;
 import com.taller.gestion.catalogo.entity.Insumo;
 import com.taller.gestion.catalogo.entity.Producto;
 import com.taller.gestion.catalogo.entity.ProductoInsumo;
-import com.taller.gestion.catalogo.exception.ProductoInsumoDuplicadoException;
-import com.taller.gestion.catalogo.exception.ProductoInsumoNotFoundException;
 import com.taller.gestion.catalogo.repository.ProductoInsumoRepository;
 import com.taller.gestion.common.exception.DatosInvalidosException;
+import com.taller.gestion.common.exception.RecursoDuplicadoException;
+import com.taller.gestion.common.exception.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +52,7 @@ public class ProductoInsumoService {
         Insumo insumo = insumoService.obtenerPorId(dto.id_insumo());
 
         if (productoInsumoRepository.buscarPorProductoEInsumo(id_producto, dto.id_insumo()).isPresent()) {
-            throw new ProductoInsumoDuplicadoException(
+            throw new RecursoDuplicadoException(
                     "El producto ya tiene asignado el insumo con ID: " + dto.id_insumo());
         }
 
@@ -91,7 +91,7 @@ public class ProductoInsumoService {
     @Transactional(readOnly = true)
     public ProductoInsumo obtenerPorId(Long id_producto_insumo) {
         return productoInsumoRepository.findById(id_producto_insumo)
-                .orElseThrow(() -> new ProductoInsumoNotFoundException(
+                .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Asignación producto-insumo no encontrada con ID: " + id_producto_insumo));
     }
 

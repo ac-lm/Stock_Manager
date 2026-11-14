@@ -4,9 +4,9 @@ import com.taller.gestion.catalogo.dto.ProductoCreateDTO;
 import com.taller.gestion.catalogo.dto.ProductoResponseDTO;
 import com.taller.gestion.catalogo.dto.ProductoUpdateDTO;
 import com.taller.gestion.catalogo.entity.Producto;
-import com.taller.gestion.catalogo.exception.ProductoNotFoundException;
 import com.taller.gestion.catalogo.repository.ProductoRepository;
 import com.taller.gestion.common.exception.DatosInvalidosException;
+import com.taller.gestion.common.exception.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +40,7 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public Producto obtenerPorId(Long id_producto) {
         return productoRepository.findById(id_producto)
-                .orElseThrow(() -> new ProductoNotFoundException(
+                .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Producto no encontrado con ID: " + id_producto));
     }
 

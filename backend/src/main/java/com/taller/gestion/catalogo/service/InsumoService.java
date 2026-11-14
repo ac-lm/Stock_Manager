@@ -4,9 +4,9 @@ import com.taller.gestion.catalogo.dto.InsumoCreateDTO;
 import com.taller.gestion.catalogo.dto.InsumoResponseDTO;
 import com.taller.gestion.catalogo.dto.InsumoUpdateDTO;
 import com.taller.gestion.catalogo.entity.Insumo;
-import com.taller.gestion.catalogo.exception.InsumoNotFoundException;
 import com.taller.gestion.catalogo.repository.InsumoRepository;
 import com.taller.gestion.common.exception.DatosInvalidosException;
+import com.taller.gestion.common.exception.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +40,7 @@ public class InsumoService {
     @Transactional(readOnly = true)
     public Insumo obtenerPorId(Long id_insumo) {
         return insumoRepository.findById(id_insumo)
-                .orElseThrow(() -> new InsumoNotFoundException(
+                .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Insumo no encontrado con ID: " + id_insumo));
     }
 
