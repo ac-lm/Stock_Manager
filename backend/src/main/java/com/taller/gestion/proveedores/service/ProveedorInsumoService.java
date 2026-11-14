@@ -2,12 +2,13 @@ package com.taller.gestion.proveedores.service;
 
 import com.taller.gestion.catalogo.entity.Insumo;
 import com.taller.gestion.catalogo.service.InsumoService;
+import com.taller.gestion.common.exception.DatosInvalidosException;
+import com.taller.gestion.common.exception.RecursoDuplicadoException;
+import com.taller.gestion.common.exception.RecursoNoEncontradoException;
 import com.taller.gestion.proveedores.dto.ProveedorInsumoCreateDTO;
 import com.taller.gestion.proveedores.dto.ProveedorInsumoResponseDTO;
 import com.taller.gestion.proveedores.entity.Proveedor;
 import com.taller.gestion.proveedores.entity.ProveedorInsumo;
-import com.taller.gestion.proveedores.exception.ProveedorDuplicadoException;
-import com.taller.gestion.proveedores.exception.ProveedorInsumoNotFoundException;
 import com.taller.gestion.proveedores.repository.ProveedorInsumoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,14 +39,14 @@ public class ProveedorInsumoService {
     @Transactional
     public ProveedorInsumoResponseDTO asignarInsumo(Long id_proveedor, ProveedorInsumoCreateDTO dto) {
         if (dto.id_insumo() == null) {
-            throw new IllegalArgumentException("El ID del insumo es obligatorio");
+            throw new DatosInvalidosException("El ID del insumo es obligatorio");
         }
 
         Proveedor proveedor = proveedorService.obtenerPorId(id_proveedor);
         Insumo insumo = insumoService.obtenerPorId(dto.id_insumo());
 
         if (proveedorInsumoRepository.buscarPorProveedorEInsumo(id_proveedor, dto.id_insumo()).isPresent()) {
-            throw new ProveedorDuplicadoException(
+            throw new RecursoDuplicadoException(
                     "El proveedor ya tiene asignado el insumo con ID: " + dto.id_insumo());
         }
 
@@ -68,7 +69,7 @@ public class ProveedorInsumoService {
     @Transactional(readOnly = true)
     public ProveedorInsumo obtenerPorId(Long id_proveedor_insumo) {
         return proveedorInsumoRepository.findById(id_proveedor_insumo)
-                .orElseThrow(() -> new ProveedorInsumoNotFoundException(
+                .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Asignación proveedor-insumo no encontrada con ID: " + id_proveedor_insumo));
     }
 

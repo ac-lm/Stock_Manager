@@ -1,11 +1,11 @@
 package com.taller.gestion.proveedores.service;
 
+import com.taller.gestion.common.exception.RecursoDuplicadoException;
+import com.taller.gestion.common.exception.RecursoNoEncontradoException;
 import com.taller.gestion.proveedores.dto.ProveedorCreateDTO;
 import com.taller.gestion.proveedores.dto.ProveedorResponseDTO;
 import com.taller.gestion.proveedores.dto.ProveedorUpdateDTO;
 import com.taller.gestion.proveedores.entity.Proveedor;
-import com.taller.gestion.proveedores.exception.ProveedorDuplicadoException;
-import com.taller.gestion.proveedores.exception.ProveedorNotFoundException;
 import com.taller.gestion.proveedores.repository.ProveedorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,14 +39,14 @@ public class ProveedorService {
     @Transactional(readOnly = true)
     public Proveedor obtenerPorId(Long id_proveedor) {
         return proveedorRepository.findById(id_proveedor)
-                .orElseThrow(() -> new ProveedorNotFoundException(
+                .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Proveedor no encontrado con ID: " + id_proveedor));
     }
 
     @Transactional
     public ProveedorResponseDTO crearProveedor(ProveedorCreateDTO dto) {
         if (dto.cuit() != null && proveedorRepository.existsByCuit(dto.cuit())) {
-            throw new ProveedorDuplicadoException("Ya existe un proveedor con el CUIT: " + dto.cuit());
+            throw new RecursoDuplicadoException("Ya existe un proveedor con el CUIT: " + dto.cuit());
         }
 
         Proveedor proveedor = new Proveedor();
@@ -67,7 +67,7 @@ public class ProveedorService {
         if (dto.cuit() != null
                 && !dto.cuit().equals(proveedor.getCuit())
                 && proveedorRepository.existsByCuit(dto.cuit())) {
-            throw new ProveedorDuplicadoException("Ya existe un proveedor con el CUIT: " + dto.cuit());
+            throw new RecursoDuplicadoException("Ya existe un proveedor con el CUIT: " + dto.cuit());
         }
 
         if (dto.nombre() != null) {
