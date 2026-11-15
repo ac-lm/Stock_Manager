@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/clientes")
 @RequiredArgsConstructor
-public class ClienteController {
+public class ClienteController implements ClienteApi {
     private final ClienteService clienteService;
 
     @GetMapping

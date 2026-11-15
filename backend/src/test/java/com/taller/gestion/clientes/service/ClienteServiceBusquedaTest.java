@@ -94,7 +94,7 @@ class ClienteServiceBusquedaTest {
         List<ClienteSimilarDTO> resultado = clienteService.buscarSimilares("  JOSÉ   Pérez ");
 
         assertThat(resultado).hasSize(1);
-        assertThat(resultado.get(0).id()).isEqualTo(7L);
+        assertThat(resultado.get(0).id_cliente()).isEqualTo(7L);
         assertThat(resultado.get(0).activo()).isFalse();
     }
 }
