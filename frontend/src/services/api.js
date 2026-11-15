@@ -3,6 +3,8 @@ const BASE_URL = '/api'
 async function extraerMensajeDeError(response) {
   try {
     const data = await response.json()
+    if (data?.detalles?.length) return `${data.mensaje}: ${data.detalles.join('. ')}`
+    if (data?.mensaje) return data.mensaje
     if (data?.message) return data.message
     if (data?.error) return data.error
   } catch {
@@ -36,4 +38,5 @@ export const api = {
   post: (path, body) => request(path, { method: 'POST', body }),
   put: (path, body) => request(path, { method: 'PUT', body }),
   delete: (path) => request(path, { method: 'DELETE' }),
+  patch: (path, body) => request(path, { method: 'PATCH', body }),
 }

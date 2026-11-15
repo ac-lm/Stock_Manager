@@ -4,6 +4,7 @@ const LINKS = [
   { to: '/insumos', label: 'Insumos' },
   { to: '/productos', label: 'Productos' },
   { to: '/proveedores', label: 'Proveedores' },
+  { to: '/clientes', label: 'Clientes' },
 ]
 
 function Navbar() {

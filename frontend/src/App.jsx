@@ -3,6 +3,7 @@ import Navbar from './components/Navbar'
 import InsumosPage from './pages/InsumosPage'
 import ProductosPage from './pages/ProductosPage'
 import ProveedoresPage from './pages/ProveedoresPage'
+import ClientesPage from './pages/ClientesPage'
 import './styles/App.css'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route path="/insumos" element={<InsumosPage />} />
           <Route path="/productos" element={<ProductosPage />} />
           <Route path="/proveedores" element={<ProveedoresPage />} />
+          <Route path="/clientes" element={<ClientesPage/>} />
           <Route path="*" element={<Navigate to="/insumos" replace />} />
         </Routes>
       </main>
