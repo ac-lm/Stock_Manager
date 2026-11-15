@@ -7,6 +7,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -39,6 +41,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OperacionNoPermitidaException.class)
     public ResponseEntity<ErrorResponse> handleOperacionNoPermitida(OperacionNoPermitidaException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), null);
+    }
+
+    // Credenciales inválidas o cuenta deshabilitada en el login.
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        String mensaje = ex instanceof DisabledException
+                ? "La cuenta está deshabilitada"
+                : "Email o contraseña incorrectos";
+        return build(HttpStatus.UNAUTHORIZED, mensaje, null);
     }
 
     // Errores de @Valid en los DTOs (@NotBlank, @Email, @Pattern, etc.)
