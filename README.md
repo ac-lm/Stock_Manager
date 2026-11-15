@@ -78,6 +78,8 @@ npm run dev
 - [`docs/arquitectura.md`](docs/arquitectura.md): módulos, reglas de desarrollo y convenciones.
 - [`docs/modelo-datos.md`](docs/modelo-datos.md): tablas y decisiones sobre el modelo relacional.
 - [`docs/db/README.md`](docs/db/README.md): cómo versionar el modelo de Vertabelo.
+- [`docs/tickets/README.md`](docs/tickets/README.md): backlog por módulo y dependencias entre módulos.
+- [`docs/tickets/incidencias/backlog.md`](docs/tickets/incidencias/backlog.md): tickets del módulo incidencias.
 
 ## Convenciones rápidas
 
