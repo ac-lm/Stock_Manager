@@ -164,7 +164,7 @@ function InsumosPage() {
                   <td className="mono">{insumo.id_insumo}</td>
                   <td>{insumo.nombre}</td>
                   <td>{insumo.unidadMedida}</td>
-                  <td>{formatoNumero(insumo.stockActual, 0)}</td>
+                  <td>{formatoNumero(insumo.stockActual, 3)}</td>
                   <td>{formatoNumero(insumo.stockMinimo, 0)}</td>
                   <td>{formatoNumero(insumo.costo)}</td>
                   <td className="table-actions">
@@ -228,7 +228,7 @@ function InsumosPage() {
                 <input
                   type="number"
                   min="0"
-                  step="1"
+                  step="0.001"
                   value={form.stockActual}
                   onChange={cambiarCampo('stockActual')}
                 />

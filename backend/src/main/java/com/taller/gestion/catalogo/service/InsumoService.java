@@ -50,7 +50,7 @@ public class InsumoService {
 
         Insumo insumo = new Insumo();
         insumo.setNombre(dto.nombre());
-        insumo.setStockActual(dto.stockActual() != null ? dto.stockActual() : 0);
+        insumo.setStockActual(dto.stockActual() != null ? dto.stockActual() : BigDecimal.ZERO);
         insumo.setUnidadMedida(dto.unidadMedida());
         insumo.setStockMinimo(dto.stockMinimo() != null ? dto.stockMinimo() : 0);
         insumo.setCosto(dto.costo() != null ? dto.costo() : BigDecimal.ZERO);

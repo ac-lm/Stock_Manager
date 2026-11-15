@@ -26,8 +26,8 @@ public class Insumo {
     @Column(name = "nombre", length = 50, nullable = false)
     private String nombre;
 
-    @Column(name = "stock_actual", nullable = false)
-    private Integer stockActual;
+    @Column(name = "stock_actual", precision = 12, scale = 3, nullable = false)
+    private BigDecimal stockActual;
 
     @Column(name = "unidad_medida", length = 50, nullable = false)
     private String unidadMedida;

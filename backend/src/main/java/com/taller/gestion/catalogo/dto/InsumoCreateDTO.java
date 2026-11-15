@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public record InsumoCreateDTO(
         String nombre,
-        Integer stockActual,
+        BigDecimal stockActual,
         String unidadMedida,
         Integer stockMinimo,
         BigDecimal costo
