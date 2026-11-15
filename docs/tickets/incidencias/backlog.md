@@ -161,8 +161,8 @@ flowchart LR
 
 | Campo | Valor |
 |---|---|
-| Estado | 🔴 Bloqueado por `INC-01`, `USU-01` |
-| Bloqueada por | `INC-01`, `USU-01` |
+| Estado | ✅ Hecho (usuario pendiente de `USU-01`) |
+| Bloqueada por | — (se implementó con `id_usuario` como `Long` sin FK) |
 | Bloquea | `INC-03`, `INC-04`, `INC-05`, `INC-06` |
 | Etiquetas | `incidencias`, `backend`, `db` |
 
@@ -177,10 +177,13 @@ flowchart LR
 - Quitar el estado `PENDIENTE` y el `tipoIncidencia` String.
 
 **Criterios de aceptación:**
-- [ ] `./mvnw compile` pasa.
-- [ ] La entidad no tiene `id_venta`.
-- [ ] `Producto` ya no está comentado.
-- [ ] El estado inicial al crear es `ABIERTA`.
+- [x] `./mvnw compile` pasa.
+- [x] La entidad no tiene `id_venta`.
+- [x] `Producto` ya no está comentado.
+- [x] El estado inicial al crear es `ABIERTA`.
+
+**Nota:** se implementó con `id_usuario` e `id_usuario_resolucion` como `Long` nullable y sin FK.
+La relación con `Usuario` queda para cuando exista `USU-01`.
 
 ---
 
@@ -188,8 +191,8 @@ flowchart LR
 
 | Campo | Valor |
 |---|---|
-| Estado | 🔴 Bloqueado por `INC-02` |
-| Bloqueada por | `INC-02` |
+| Estado | ✅ Hecho |
+| Bloqueada por | — |
 | Bloquea | `INC-04` |
 | Etiquetas | `incidencias`, `backend` |
 
@@ -204,10 +207,10 @@ flowchart LR
 - DTOs como `record`.
 
 **Criterios de aceptación:**
-- [ ] 200/201/204 en los casos felices.
-- [ ] 400 con nombre vacío y 409 con nombre duplicado.
-- [ ] Un tipo inactivo no se puede usar al crear una incidencia.
-- [ ] No se permite borrar físicamente un tipo con incidencias asociadas.
+- [x] 200/201/204 en los casos felices.
+- [x] 400 con nombre vacío y 409 con nombre duplicado.
+- [x] Un tipo inactivo no se puede usar al crear una incidencia.
+- [x] No se permite borrar físicamente un tipo con incidencias asociadas (baja lógica).
 
 **Nota:** el modelo de `Tipo_Incidencia` se define en `INC-01`. Si finalmente se opta por enum, este ticket se cancela y `INC-04` valida contra el enum.
 
@@ -217,8 +220,8 @@ flowchart LR
 
 | Campo | Valor |
 |---|---|
-| Estado | 🔴 Bloqueado por `INC-02`, `INC-03`, `USU-01` (catálogo ya está ✅) |
-| Bloqueada por | `INC-02`, `INC-03`, `USU-01` |
+| Estado | 🟡 En curso (falta validar usuario con `USU-01`) |
+| Bloqueada por | `USU-01` (solo validación de usuario) |
 | Bloquea | `INC-06`, `INC-08` |
 | Etiquetas | `incidencias`, `backend` |
 
@@ -234,11 +237,11 @@ flowchart LR
 - Devolver `201` con `IncidenciaResponseDTO` completo.
 
 **Criterios de aceptación:**
-- [ ] Sin producto ni insumo devuelve 400.
-- [ ] Tipo inactivo o inexistente devuelve 400/404.
+- [x] Sin producto ni insumo devuelve 400.
+- [x] Tipo inactivo o inexistente devuelve 400/404.
 - [ ] Usuario inexistente devuelve 404.
-- [ ] La respuesta incluye IDs, estado y fecha.
-- [ ] No se modifica `stock_actual`.
+- [x] La respuesta incluye IDs, estado y fecha.
+- [x] No se modifica `stock_actual`.
 
 ---
 
@@ -246,8 +249,8 @@ flowchart LR
 
 | Campo | Valor |
 |---|---|
-| Estado | 🔴 Bloqueado por `INC-02` |
-| Bloqueada por | `INC-02` |
+| Estado | ✅ Hecho |
+| Bloqueada por | — |
 | Bloquea | `INC-08`, `INC-09` |
 | Etiquetas | `incidencias`, `backend` |
 
@@ -260,10 +263,10 @@ flowchart LR
 - Paginación si se mantiene el criterio de `clientes` (`Pageable`).
 
 **Criterios de aceptación:**
-- [ ] Listado sin filtros devuelve las incidencias más recientes primero.
-- [ ] Los filtros se pueden combinar.
-- [ ] Un ID inexistente devuelve 404.
-- [ ] No se exponen entidades JPA.
+- [x] Listado sin filtros devuelve las incidencias más recientes primero.
+- [x] Los filtros se pueden combinar.
+- [x] Un ID inexistente devuelve 404.
+- [x] No se exponen entidades JPA.
 
 ---
 
@@ -271,8 +274,8 @@ flowchart LR
 
 | Campo | Valor |
 |---|---|
-| Estado | 🔴 Bloqueado por `INC-02`, `USU-01` |
-| Bloqueada por | `INC-02`, `USU-01` |
+| Estado | 🟡 En curso (falta validar usuario con `USU-01`) |
+| Bloqueada por | `USU-01` (solo validación de usuario) |
 | Bloquea | `INC-07` |
 | Etiquetas | `incidencias`, `backend` |
 
@@ -286,10 +289,10 @@ flowchart LR
 - Si ya está cerrada, devolver 409.
 
 **Criterios de aceptación:**
-- [ ] Cerrar una incidencia abierta devuelve 200 con el DTO actualizado.
-- [ ] Cerrar dos veces devuelve 409.
+- [x] Cerrar una incidencia abierta devuelve 200 con el DTO actualizado.
+- [x] Cerrar dos veces devuelve 409.
 - [ ] Usuario inexistente devuelve 404.
-- [ ] **No** descuenta stock todavía (eso es `INC-07`).
+- [x] **No** descuenta stock todavía (eso es `INC-07`).
 
 ---
 
@@ -324,21 +327,21 @@ flowchart LR
 
 | Campo | Valor |
 |---|---|
-| Estado | 🔴 Bloqueado por `INC-04`, `INC-05`, `INC-06`, `INC-07` |
-| Bloqueada por | `INC-04`, `INC-05`, `INC-06`, `INC-07` |
+| Estado | 🟡 En curso (tests unitarios; faltan stock y usuario) |
+| Bloqueada por | `INC-07`, `USU-01` |
 | Bloquea | `INC-09`, `INC-10` |
 | Etiquetas | `incidencias`, `tests` |
 
 **Casos mínimos:**
-- [ ] Crear sin producto ni insumo → 400.
-- [ ] Crear con tipo inactivo → 400/404.
+- [x] Crear sin producto ni insumo → 400.
+- [x] Crear con tipo inactivo → 400/404.
 - [ ] Crear con usuario inexistente → 404.
-- [ ] Crear correctamente → `ABIERTA`, con fecha.
-- [ ] Cerrar correctamente → `CERRADA`, con `fecha_resolucion`.
-- [ ] Cerrar dos veces → 409.
+- [x] Crear correctamente → `ABIERTA`, con fecha.
+- [x] Cerrar correctamente → `CERRADA`, con `fecha_resolucion`.
+- [x] Cerrar dos veces → 409.
 - [ ] Cerrar con stock insuficiente → 409 y sigue `ABIERTA`.
 - [ ] Cerrar con stock suficiente → descuenta y registra movimiento.
-- [ ] Listar con filtros y obtener por ID.
+- [x] Listar con filtros y obtener por ID.
 
 **Criterios de aceptación:**
 - [ ] `./mvnw test` pasa.
