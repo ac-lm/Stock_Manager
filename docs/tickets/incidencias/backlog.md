@@ -132,8 +132,8 @@ flowchart LR
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟡 En definición (confirmar la pregunta 1) |
-| Bloqueada por | Confirmación de la clienta sobre tipos editables vs. enum |
+| Estado | 🟢 Listo (decisión 1c confirmada: tabla `Tipo_Incidencia`) |
+| Bloqueada por | — |
 | Bloquea | `INC-02` |
 | Etiquetas | `incidencias`, `db`, `diseño` |
 
@@ -153,7 +153,11 @@ flowchart LR
 **Criterios de aceptación:**
 - [ ] El modelo refleja todos los cambios anteriores.
 - [ ] Se exportó el XML a `docs/db/modelo-vertabelo.xml`.
-- [ ] Quedó documentada la decisión sobre `Tipo_Incidencia` (tabla vs. enum).
+- [x] Quedó documentada la decisión sobre `Tipo_Incidencia` (tabla vs. enum).
+
+**Nota:** la decisión de la pregunta 1 quedó confirmada: tabla editable, no enum. El código de
+`INC-02` ya se implementó con `id_usuario` e `id_usuario_resolucion` como `Long` sin FK; al
+actualizar Vertabelo hay que prever esas FK para cuando exista `USU-01`.
 
 ---
 
