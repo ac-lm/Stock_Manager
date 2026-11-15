@@ -1,6 +1,6 @@
 package com.taller.gestion.incidencias.dto;
 
-import com.taller.gestion.common.util.TextoUtil;
+import com.taller.gestion.util.TextoUtil;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;

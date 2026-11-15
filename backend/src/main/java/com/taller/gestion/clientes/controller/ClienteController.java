@@ -1,9 +1,6 @@
 package com.taller.gestion.clientes.controller;
 
-import com.taller.gestion.clientes.dto.ClienteCreateDTO;
-import com.taller.gestion.clientes.dto.ClienteEstadoDTO;
-import com.taller.gestion.clientes.dto.ClienteResponseDTO;
-import com.taller.gestion.clientes.dto.ClienteUpdateDTO;
+import com.taller.gestion.clientes.dto.*;
 import com.taller.gestion.clientes.service.ClienteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +10,8 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/clientes")
@@ -32,6 +31,11 @@ public class ClienteController {
     public ResponseEntity<ClienteResponseDTO> crear(@Valid @RequestBody ClienteCreateDTO dto) {
         ClienteResponseDTO nuevoCliente = clienteService.save(dto);
         return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/similares")
+    public List<ClienteSimilarDTO> similares(@RequestParam String nombre) {
+        return clienteService.buscarSimilares(nombre);
     }
 
     @GetMapping("/{id}")

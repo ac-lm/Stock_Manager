@@ -89,6 +89,30 @@ class ClienteRepositoryTest {
         assertThat(clienteRepository.existsByCuitAndIdNot("20-12345678-6", 999L)).isTrue();
     }
 
+    // =========================== buscarSimilares ===========================
+
+    @Test
+    @DisplayName("Similares ignora acentos y mayúsculas")
+    void similares_ignoraAcentosYMayusculas() {
+        guardar("José Pérez Hnos", null, TipoCliente.CONSUMIDOR_FINAL, true);
+
+        var resultado = clienteRepository.buscarSimilares("jose perez", PageRequest.of(0, 5));
+
+        assertThat(resultado).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Similares incluye inactivos y excluye al cliente genérico")
+    void similares_incluyeInactivosYExcluyeGenerico() {
+        guardar("Perez Inactivo", null, TipoCliente.CONSUMIDOR_FINAL, false);
+        guardar("Perez Generico", null, TipoCliente.GENERICO, true);
+
+        var resultado = clienteRepository.buscarSimilares("perez", PageRequest.of(0, 5));
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getNombre()).isEqualTo("Perez Inactivo");
+    }
+
     // ============================== unique ==============================
 
     @Test

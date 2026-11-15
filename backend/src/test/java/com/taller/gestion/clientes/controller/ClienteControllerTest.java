@@ -41,17 +41,17 @@ class ClienteControllerTest {
 
     private ClienteCreateDTO altaValida() {
         return new ClienteCreateDTO("20-12345678-6", "Panadería Sol", "2262-123456",
-                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null);
+                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null, 30);
     }
 
     private ClienteUpdateDTO updateValido() {
         return new ClienteUpdateDTO("20-12345678-6", "Panadería Sol", "2262-123456",
-                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null);
+                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null, 30);
     }
 
     private ClienteResponseDTO respuesta() {
         return new ClienteResponseDTO(1L, "20-12345678-6", "Panadería Sol", "2262-123456",
-                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null, true);
+                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null, true, 30);
     }
 
     @Test
@@ -70,13 +70,25 @@ class ClienteControllerTest {
     @DisplayName("POST con nombre vacío: 400 con el detalle del campo")
     void alta_nombreVacio_400() throws Exception {
         ClienteCreateDTO invalido = new ClienteCreateDTO("20-12345678-6", "   ", null,
-                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null);
+                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null, null);
 
         mockMvc.perform(post("/api/clientes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalido)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detalles").isArray());
+    }
+
+    @Test
+    @DisplayName("POST con plazo negativo: 400")
+    void alta_plazoNegativo_400() throws Exception {
+        ClienteCreateDTO invalido = new ClienteCreateDTO("20-12345678-6", "Panadería Sol", null,
+                "sol@mail.com", "Calle 1 123", TipoCliente.GRAN_CLIENTE, null, -5);
+
+        mockMvc.perform(post("/api/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalido)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -132,5 +144,15 @@ class ClienteControllerTest {
         mockMvc.perform(get("/api/clientes").param("busqueda", "sol"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].nombre").value("Panadería Sol"));
+    }
+
+    @Test
+    @DisplayName("GET de similares: 200 y lista vacía si no hay coincidencias")
+    void similares_200() throws Exception {
+        when(clienteService.buscarSimilares("perez")).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/clientes/similares").param("nombre", "perez"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
     }
 }

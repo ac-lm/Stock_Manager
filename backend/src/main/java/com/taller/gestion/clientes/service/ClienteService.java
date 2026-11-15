@@ -2,6 +2,7 @@ package com.taller.gestion.clientes.service;
 
 import com.taller.gestion.clientes.dto.ClienteCreateDTO;
 import com.taller.gestion.clientes.dto.ClienteResponseDTO;
+import com.taller.gestion.clientes.dto.ClienteSimilarDTO;
 import com.taller.gestion.clientes.dto.ClienteUpdateDTO;
 import com.taller.gestion.clientes.entity.Cliente;
 import com.taller.gestion.clientes.entity.TipoCliente;
@@ -11,11 +12,15 @@ import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.OperacionNoPermitidaException;
 import com.taller.gestion.common.exception.RecursoDuplicadoException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
+import com.taller.gestion.util.TextoUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,10 +30,9 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public Page<ClienteResponseDTO> buscar(String busqueda, boolean incluirInactivos, Pageable pageable) {
         String texto = busqueda == null ? "" : busqueda.trim();
-        String digitos = texto.replaceAll("\\D", "");
-        if (digitos.isEmpty() && !texto.isEmpty()) {
-            digitos = "#";
-        }
+        boolean pareceCuit = texto.matches("[\\d\\s.-]+");
+        String digitos = pareceCuit ? texto.replaceAll("\\D", "") : "#";
+        if (texto.isEmpty()) digitos = "";
         return clienteRepository
                 .buscar(texto, digitos, incluirInactivos, pageable)
                 .map(this::mapearAResponse);
@@ -37,9 +41,9 @@ public class ClienteService {
     @Transactional
     public ClienteResponseDTO save(ClienteCreateDTO dto) {
         validarTipoNoGenerico(dto.tipo_cliente());
+        validarCondicionesComerciales(dto.tipo_cliente(), dto.plazo_pago_dias());
 
         String cuit = normalizarCuit(dto.cuit());
-
         validarCuitYTipoCliente(cuit, dto.tipo_cliente(), null);
 
         Cliente cliente = new Cliente();
@@ -50,6 +54,7 @@ public class ClienteService {
         cliente.setDireccion(dto.direccion());
         cliente.setTipo_cliente(dto.tipo_cliente());
         cliente.setObservaciones(dto.observaciones());
+        cliente.setPlazo_pago_dias(dto.plazo_pago_dias());
 
         return mapearAResponse(clienteRepository.save(cliente));
     }
@@ -68,6 +73,9 @@ public class ClienteService {
 
         validarCuitYTipoCliente(cuit, dto.tipo_cliente(), id);
 
+        Integer plazo = dto.tipo_cliente() == TipoCliente.GRAN_CLIENTE ? dto.plazo_pago_dias() : null;
+        cliente.setPlazo_pago_dias(plazo);
+
         cliente.setCuit(cuit);
         cliente.setNombre(dto.nombre());
         cliente.setTelefono(dto.telefono());
@@ -84,6 +92,25 @@ public class ClienteService {
         Cliente cliente = obtenerClienteEditable(id);
         cliente.setActivo(activo);
         return mapearAResponse(cliente);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClienteSimilarDTO> buscarSimilares(String nombre) {
+        String texto = TextoUtil.normalizarParaBusqueda(nombre);
+        if (texto.length() < 3) {
+            return List.of();
+        }
+        return clienteRepository.buscarSimilares(texto, PageRequest.of(0, 5)).stream()
+                .map(c -> new ClienteSimilarDTO(c.getId_cliente(), c.getNombre(), c.getCuit(),
+                        c.getTipo_cliente(), c.isActivo()))
+                .toList();
+    }
+
+    private void validarCondicionesComerciales(TipoCliente tipo, Integer plazoPagoDias) {
+        if (plazoPagoDias != null && tipo != TipoCliente.GRAN_CLIENTE) {
+            throw new DatosInvalidosException(
+                    "Las condiciones comerciales solo se pueden cargar a grandes clientes");
+        }
     }
 
     private Cliente obtenerCliente(Long id) {
@@ -120,7 +147,10 @@ public class ClienteService {
         if (cuit == null || cuit.isBlank()) {
             return null;
         }
-        String digitos = cuit.replaceAll("\\D", ""); // saca guiones, puntos y espacios
+        if (!cuit.matches("[\\d\\s.-]+")) {
+            throw new DatosInvalidosException("El CUIT solo puede contener números, guiones, puntos y espacios");
+        }
+        String digitos = cuit.replaceAll("\\D", "");
         if (digitos.length() != 11) {
             throw new DatosInvalidosException("El CUIT debe tener 11 dígitos");
         }
@@ -137,7 +167,8 @@ public class ClienteService {
                 cliente.getDireccion(),
                 cliente.getTipo_cliente(),
                 cliente.getObservaciones(),
-                cliente.isActivo()
+                cliente.isActivo(),
+                cliente.getPlazo_pago_dias()
         );
     }
 

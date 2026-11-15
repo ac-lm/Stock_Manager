@@ -1,11 +1,10 @@
 package com.taller.gestion.clientes.dto;
 
 import com.taller.gestion.clientes.entity.TipoCliente;
-import com.taller.gestion.common.util.TextoUtil;
+import com.taller.gestion.util.TextoUtil;
 import jakarta.validation.constraints.*;
 
 public record ClienteUpdateDTO(
-        @Pattern(regexp = "^\\d{2}-\\d{8}-\\d$", message = "El CUIT debe tener el formato XX-XXXXXXXX-X")
         String cuit,
         @NotBlank @Size(max = 50)
         String nombre,
@@ -18,7 +17,10 @@ public record ClienteUpdateDTO(
         @NotNull
         TipoCliente tipo_cliente,
         @Size(max = 250)
-        String observaciones
+        String observaciones,
+        @Min(value = 0, message = "El plazo no puede ser negativo")
+        @Max(value = 365, message = "El plazo no puede superar los 365 días")
+        Integer plazo_pago_dias
 ) {
         public ClienteUpdateDTO {
                 nombre = TextoUtil.limpiar(nombre);

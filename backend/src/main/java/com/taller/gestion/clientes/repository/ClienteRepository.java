@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     boolean existsByCuit(String cuit);
@@ -28,4 +30,12 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     @Query("SELECT COUNT(c) > 0 FROM Cliente c WHERE c.cuit = :cuit AND c.id_cliente <> :id")
     boolean existsByCuitAndIdNot(@Param("cuit") String cuit, @Param("id") Long id);
+
+    @Query("""
+    SELECT c FROM Cliente c
+    WHERE c.tipo_cliente <> com.taller.gestion.clientes.entity.TipoCliente.GENERICO
+      AND c.nombre_normalizado LIKE CONCAT('%', :texto, '%')
+    ORDER BY c.nombre
+    """)
+    List<Cliente> buscarSimilares(@Param("texto") String texto, Pageable pageable);
 }

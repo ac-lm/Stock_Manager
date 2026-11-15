@@ -11,5 +11,6 @@ public record ClienteResponseDTO(
         String direccion,
         TipoCliente tipo_cliente,
         String observaciones,
-        boolean activo
+        boolean activo,
+        Integer plazo_pago_dias
 ) { }

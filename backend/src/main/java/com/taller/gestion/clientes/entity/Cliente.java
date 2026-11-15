@@ -1,5 +1,6 @@
 package com.taller.gestion.clientes.entity;
 
+import com.taller.gestion.util.TextoUtil;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -40,4 +41,16 @@ public class Cliente {
 
     @Column(nullable = false)
     private boolean activo = true;
+
+    @Column(name = "plazo_pago_dias")
+    private Integer plazo_pago_dias;
+
+    @Column(name = "nombre_normalizado", length = 50, nullable = false)
+    private String nombre_normalizado;
+
+    @PrePersist
+    @PreUpdate
+    private void actualizarNombreNormalizado() {
+        this.nombre_normalizado = TextoUtil.normalizarParaBusqueda(this.nombre);
+    }
 }
