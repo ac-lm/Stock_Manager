@@ -136,6 +136,8 @@ El modelo de Vertabelo tiene **22 tablas**. Además de las de arriba, el sistema
 - `Movimiento_Stock`, `Caja`, `Pedido`, `Detalle_Pedido`, `Costo`, `Auditoria` y las tablas
   restantes del modelo.
 
+
+
 No se documentan columnas de esas tablas hasta contar con el XML completo, para no inventar
 estructura. Cuando se agregue `docs/db/modelo-vertabelo.xml`, esta sección se completa con el
 detalle exacto.

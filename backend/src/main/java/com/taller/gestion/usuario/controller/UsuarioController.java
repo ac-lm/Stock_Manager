@@ -74,3 +74,4 @@ public class UsuarioController implements UsuarioApi {
         return ResponseEntity.noContent().build();
     }
 }
+

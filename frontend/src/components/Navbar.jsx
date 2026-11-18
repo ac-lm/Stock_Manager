@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/auth-context'
 
 const LINKS = [
   { to: '/insumos', label: 'Insumos' },
@@ -7,12 +9,37 @@ const LINKS = [
   { to: '/clientes', label: 'Clientes' },
 ]
 
+const LINK_ADMIN = { to: '/usuarios', label: 'Usuarios' }
+
+const ROLES = {
+  ADMINISTRADOR: 'Administrador',
+  VENDEDOR: 'Vendedor',
+}
+
 function Navbar() {
+  const { usuario, logout } = useAuth()
+  const navigate = useNavigate()
+  const [saliendo, setSaliendo] = useState(false)
+
+  if (!usuario) return null
+
+  const links = usuario.rol === 'ADMINISTRADOR' ? [...LINKS, LINK_ADMIN] : LINKS
+
+  const cerrarSesion = async () => {
+    setSaliendo(true)
+    try {
+      await logout()
+      navigate('/login', { replace: true })
+    } finally {
+      setSaliendo(false)
+    }
+  }
+
   return (
     <header className="app-nav">
       <div className="app-brand">Stock Manager</div>
       <nav className="app-links">
-        {LINKS.map((link) => (
+        {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
@@ -22,6 +49,20 @@ function Navbar() {
           </NavLink>
         ))}
       </nav>
+      <div className="app-session">
+        <div className="app-user">
+          <span className="app-user-name">{usuario.nombre}</span>
+          <span className="app-user-role">{ROLES[usuario.rol] ?? usuario.rol}</span>
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={cerrarSesion}
+          disabled={saliendo}
+        >
+          {saliendo ? 'Saliendo...' : 'Cerrar sesión'}
+        </button>
+      </div>
     </header>
   )
 }
