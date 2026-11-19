@@ -53,6 +53,8 @@ dependencias resueltas.
 | `costos` | [`costos/backlog.md`](costos/backlog.md) |
 | `incidencias` | [`incidencias/backlog.md`](incidencias/backlog.md) |
 | `incidencias` (preguntas) | [`incidencias/preguntas.md`](incidencias/preguntas.md) |
+| `ventas` | [`ventas/backlog.md`](ventas/backlog.md) |
+| `ventas` (preguntas) | [`ventas/preguntas.md`](ventas/preguntas.md) |
 | `usuarios` | [`usuarios/backlog.md`](usuarios/backlog.md) |
 
 ## Seguimiento en Trello
