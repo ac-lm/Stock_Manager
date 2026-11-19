@@ -46,7 +46,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 | [`VEN-10`](VEN-10-descuento-stock.md) | Descuento de stock al confirmar | módulo `stock` (`STOCK-01`) | 🔴 |
 | [`VEN-11`](VEN-11-tests.md) | Tests del módulo | `VEN-03`, `VEN-04`, `VEN-05` | ✅ |
 | [`VEN-12`](VEN-12-documentacion-swagger.md) | Documentación Swagger | `VEN-03`, `VEN-04`, `VEN-05` | ✅ |
-| [`VEN-13`](VEN-13-frontend-ventas.md) | Frontend de ventas | `VEN-03`, `VEN-05` | 🔴 |
+| [`VEN-13`](VEN-13-frontend-ventas.md) | Frontend de ventas | `VEN-03`, `VEN-05` (resueltos) | ✅ |
 
 ## Orden recomendado
 
@@ -55,11 +55,11 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 3. ~~`VEN-03`~~.
 4. ~~En paralelo: `VEN-04` y `VEN-05`~~.
 5. ~~En paralelo: `VEN-11` y `VEN-12`~~.
-6. `VEN-13` cuando se habilite el frontend de ventas, después del de incidencias.
+6. ~~`VEN-13`~~ (hecho).
 7. Los diferidos (`VEN-06` a `VEN-10`) cuando existan sus módulos y su DDL.
 
-**Camino crítico cumplido hasta acá:** `VEN-01 → VEN-03 → VEN-04/VEN-05 → VEN-11/VEN-12`.
-Lo que queda: `VEN-02` → `VEN-13` y los diferidos.
+**Camino crítico cumplido hasta acá:** `VEN-01 → VEN-03 → VEN-04/VEN-05 → VEN-11/VEN-12 → VEN-13`.
+Lo que queda: `VEN-02` y los diferidos (`VEN-06` a `VEN-10`).
 
 ## Prerrequisitos (fuera del código de `venta`)
 
@@ -114,6 +114,16 @@ cd backend
 ```
 
 También pasan los 48 tests del módulo `clientes` después de `CLI-09`.
+
+Para el frontend (`VEN-13`):
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+Ambos pasan. La pantalla quedó en `/ventas` con link en la navbar.
 
 Prueba manual en una base limpia:
 

@@ -2,8 +2,8 @@
 
 | Campo | Valor |
 |---|---|
-| Estado | 🔴 Bloqueado |
-| Bloqueado por | `VEN-03`, `VEN-05` |
+| Estado | ✅ Hecho |
+| Bloqueado por | `VEN-03`, `VEN-05` (resueltos) |
 | Bloquea | — |
 | Etiquetas | `ventas`, `frontend` |
 
@@ -18,12 +18,20 @@
 
 ## Criterios de aceptación
 
-- [ ] Se pueden agregar/quitar renglones y se ve el total estimado.
-- [ ] No existe campo de precio ni de descuento.
-- [ ] El seller no se muestra: sale de la sesión.
-- [ ] Anular pide confirmación y avisa que no se revierte stock.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Se pueden agregar/quitar renglones y se ve el total estimado.
+- [x] No existe campo de precio ni de descuento.
+- [x] El vendedor no se muestra: sale de la sesión.
+- [x] Anular pide confirmación y avisa que no se revierte stock.
+- [x] `npm run lint` y `npm run build` pasan.
+
+## Archivos
+
+- `frontend/src/services/ventasService.js`
+- `frontend/src/pages/VentasPage.jsx`
+- `frontend/src/App.jsx`: ruta `/ventas`.
+- `frontend/src/components/Navbar.jsx`: link **Ventas**.
 
 ## Notas
 
-El backend ya está listo. Se hace después del frontend de incidencias, según el orden acordado.
+El total estimado usa precios de catálogo y está aclarado en la pantalla: el total real lo calcula
+el backend con la lista del tipo de cliente. Queda pendiente la optimización del N+1 de `VEN-05`.
