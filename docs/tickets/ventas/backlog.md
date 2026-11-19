@@ -34,54 +34,54 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | ID | Ticket | Bloqueado por | Estado |
 |---|---|---|---|
-| `VEN-01` | Modelo de `Venta` y `Detalle_Venta` | DDL corregido (`id_detalle_venta`) | 🔴 |
-| `VEN-02` | Lista de precios por tipo de cliente | DDL con la tabla + definir módulo dueño | 🔴 |
-| `VEN-03` | Alta y confirmación de venta | `VEN-01`, `VEN-02` | 🔴 |
-| `VEN-04` | Anulación de venta | `VEN-03` | 🔴 |
-| `VEN-05` | Consultas y filtros de ventas | `VEN-03` | 🔴 |
-| `VEN-06` | Remito automático por venta | `VEN-03`, DDL de remito | 🔴 |
-| `VEN-07` | Entregas parciales con `Detalle_Remito` | `VEN-06`, DDL de remito | 🔴 |
-| `VEN-08` | Emisión de factura | `VEN-06`, módulo de facturación | 🔴 |
-| `VEN-09` | Venta desde pedido con seña | módulos `pedidos` y `caja` | 🔴 |
-| `VEN-10` | Descuento de stock al confirmar | módulo `stock` (`STOCK-01`) | 🔴 |
-| `VEN-11` | Tests del módulo | `VEN-03`, `VEN-04`, `VEN-05` | 🔴 |
-| `VEN-12` | Documentación Swagger | `VEN-03`, `VEN-04`, `VEN-05` | 🔴 |
-| `VEN-13` | Frontend de ventas | `VEN-03`, `VEN-05` | 🔴 |
+| [`VEN-01`](VEN-01-modelo-venta-detalle.md) | Modelo de `Venta` y `Detalle_Venta` | — | ✅ |
+| [`VEN-02`](VEN-02-lista-precios-tipo-cliente.md) | Lista de precios por tipo de cliente | Modelo de datos | 🟡 |
+| [`VEN-03`](VEN-03-alta-y-confirmacion.md) | Alta y confirmación de venta | `VEN-01`, `VEN-02` | ✅ |
+| [`VEN-04`](VEN-04-anulacion.md) | Anulación de venta | `VEN-03` | ✅ |
+| [`VEN-05`](VEN-05-consultas-y-filtros.md) | Consultas y filtros de ventas | `VEN-03` | ✅ |
+| [`VEN-06`](VEN-06-remito-automatico.md) | Remito automático por venta | Módulo de comprobantes | 🔴 |
+| [`VEN-07`](VEN-07-entregas-parciales.md) | Entregas parciales con `Detalle_Remito` | `VEN-06` | 🔴 |
+| [`VEN-08`](VEN-08-factura.md) | Emisión de factura | `VEN-06`, módulo de facturación | 🔴 |
+| [`VEN-09`](VEN-09-venta-desde-pedido.md) | Venta desde pedido con seña | módulos `pedidos` y `caja` | 🔴 |
+| [`VEN-10`](VEN-10-descuento-stock.md) | Descuento de stock al confirmar | módulo `stock` (`STOCK-01`) | 🔴 |
+| [`VEN-11`](VEN-11-tests.md) | Tests del módulo | `VEN-03`, `VEN-04`, `VEN-05` | ✅ |
+| [`VEN-12`](VEN-12-documentacion-swagger.md) | Documentación Swagger | `VEN-03`, `VEN-04`, `VEN-05` | ✅ |
+| [`VEN-13`](VEN-13-frontend-ventas.md) | Frontend de ventas | `VEN-03`, `VEN-05` | 🔴 |
 
 ## Orden recomendado
 
-1. **DDL corregido** (prerrequisito, no es un ticket de código): lista de precios,
-   `id_detalle_venta` y modelo actualizado.
-2. Definir el dueño de la lista de precios. El cliente genérico ya está resuelto en `CLI-09`.
-3. `VEN-01` y `VEN-02` (en paralelo).
-4. `VEN-03`.
-5. **En paralelo:** `VEN-04` y `VEN-05`.
-6. **En paralelo:** `VEN-11` y `VEN-12`.
-7. `VEN-13` cuando se habilite el frontend de ventas.
-8. Los diferidos (`VEN-06` a `VEN-10`) cuando existan sus módulos y su DDL.
+1. ~~`VEN-01`~~ (hecho con el DDL recibido).
+2. `VEN-02` (resolución de precios hecha; falta la tabla en el modelo y el CRUD de carga).
+3. ~~`VEN-03`~~.
+4. ~~En paralelo: `VEN-04` y `VEN-05`~~.
+5. ~~En paralelo: `VEN-11` y `VEN-12`~~.
+6. `VEN-13` cuando se habilite el frontend de ventas, después del de incidencias.
+7. Los diferidos (`VEN-06` a `VEN-10`) cuando existan sus módulos y su DDL.
 
-**Camino crítico:** `DDL corregido → VEN-01/VEN-02 → VEN-03 → VEN-05 → VEN-11/VEN-12`.
+**Camino crítico cumplido hasta acá:** `VEN-01 → VEN-03 → VEN-04/VEN-05 → VEN-11/VEN-12`.
+Lo que queda: `VEN-02` → `VEN-13` y los diferidos.
 
 ## Prerrequisitos (fuera del código de `venta`)
 
-### 1. DDL corregido — bloquea `VEN-01` y `VEN-02`
+### 1. Estado del modelo de datos
 
-Ya se recibió un primer export (Redgate Data Modeler, 2026-11-19) con `Venta` y `Detalle_Venta`.
-Trae `cantidad decimal(12,3)`, `precio_historico`, `subtotal`, `fecha`, `hora`, `estado`,
-`fecha_vencimiento` y FKs a `Cliente` y `Usuario`; no trae `descuento` ni `medio_pago`. **No se
-escriben entidades nuevas hasta el export corregido**, que debe incluir:
+Se recibieron dos exports de Redgate Data Modeler (2026-11-19). El código de `venta` usa el
+segundo. **El modelo sigue sin finalizar**, por lo que el código avanzó con lo disponible y acá
+quedan los ajustes pendientes:
 
-- **Lista de precios por tipo de cliente** (aclaración 9): tabla, columnas y relación con
-  `TipoCliente`/`Producto`. Es la decisión 2b y hoy no existe en el modelo.
-- **`id_detalle_venta`** en `Detalle_Venta` (aclaración 11), en reemplazo de la PK compuesta
-  `(id_producto_fk, id_venta_fk)`.
-- **Modelo actualizado** (aclaración 12): `Cliente.cuit` nullable, `Insumo.stock_actual`
-  `decimal(12,3)`, estructura nueva de `Incidencia`, `Costo.id_usuario_anulacion` nullable y FK de
-  `Tipo_Incidencia` corregida. No se toca el código de esos módulos.
-- Para los diferidos, conviene corregir en el mismo export: `Detalle_Remito.id_detalle_remito`
-  `serial`, `cantidad decimal(12,3)`, columna `id_venta` en minúsculas y FK de
-  `Remito_Comprobante.id_cliente`.
-- `id_pedido` en `Venta` y seña en `Pedido` cuando se modele `VEN-09`.
+| Ajuste | Estado en el último DDL |
+|---|---|
+| `Cliente.cuit` nullable | ✅ Corregido |
+| `Detalle_Venta.id_detalle_venta` como PK | ✅ Corregido |
+| `Detalle_Remito.id_detalle_remito serial` y columna `id_venta` | ✅ Corregido |
+| FK `Remito_Comprobante_Cliente` | ✅ Corregida |
+| **Lista de precios por tipo de cliente** | ❌ Falta: `VEN-02` la creó por JPA, pero no está en el modelo |
+| `Insumo.stock_actual` | ❌ Quedó `decimal(%,%)`: valor inválido, debe ser `decimal(12,3)` |
+| `Producto.stock_actual` | ❌ Volvió a `int`; el código usa `BigDecimal(12,3)` y se vende por peso |
+| `Detalle_Remito.cantidad` | ❌ Sigue `int`; Vertabelo tiró error al cambiarlo a decimal |
+| `Incidencia` y `Tipo_Incidencia` | ❌ Estructura vieja (`cantidad_afectada int`, FK invertida) |
+| `Costo.id_usuario_anulacion` | ❌ Sigue `NOT NULL`; el código lo deja nullable |
+| `id_pedido` en `Venta` y seña en `Pedido` | ❌ Para `VEN-09` |
 
 `Venta.fecha_vencimiento` se mantiene: es el plazo para pagar el saldo cuando hay seña
 (aclaración 10). Se persiste como opcional, sin regla de negocio en esta tanda.
@@ -95,21 +95,25 @@ El usuario autorizó tocar `clientes`. Ya están hechos:
 
 `VEN-03` puede usar el servicio sin depender de un id cargado a mano.
 
-### 3. Dueño de la lista de precios — bloquea `VEN-02`
+### 3. Dueño de la lista de precios — pendiente de decidir
 
-La tabla de lista de precios por tipo de cliente no existe. Falta ver el DDL corregido para saber
-si vive en `catalogo`, en `clientes` o en `venta`. Si queda fuera de `venta`, se necesita permiso
-para agregar ahí el servicio de consulta (la autorización de esta tanda era **solo leer**).
+La tabla `Precio_Tipo_Cliente` la crea JPA con `ddl-auto=update` y hoy vive en el paquete
+`venta`. Falta decidir si su CRUD queda ahí o pasa a `catalogo`/`clientes`, y reflejar la tabla en
+el export. Si pasa a otro módulo, se necesita permiso para agregar el servicio de consulta (la
+autorización de esta tanda era **solo leer**).
 
 ## Verificación del módulo
 
-Cuando los tickets estén hechos:
+Estado actual: `./mvnw clean compile` pasa y `./mvnw -Dtest='com.taller.gestion.venta.**' test`
+da **15 tests, 0 fallos** (10 de service y 5 de controller).
 
 ```bash
 cd backend
 ./mvnw clean compile
 ./mvnw -Dtest='com.taller.gestion.venta.**' test
 ```
+
+También pasan los 48 tests del módulo `clientes` después de `CLI-09`.
 
 Prueba manual en una base limpia:
 
