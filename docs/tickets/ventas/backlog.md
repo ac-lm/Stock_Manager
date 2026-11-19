@@ -34,9 +34,9 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | ID | Ticket | Bloqueado por | Estado |
 |---|---|---|---|
-| `VEN-01` | Modelo de `Venta` y `Detalle_Venta` | DDL de Vertabelo | 🔴 |
-| `VEN-02` | Lista de precios por tipo de cliente | DDL de Vertabelo + definir módulo dueño | 🔴 |
-| `VEN-03` | Alta y confirmación de venta | `VEN-01`, `VEN-02`, cliente genérico accesible | 🔴 |
+| `VEN-01` | Modelo de `Venta` y `Detalle_Venta` | DDL corregido (`id_detalle_venta`) | 🔴 |
+| `VEN-02` | Lista de precios por tipo de cliente | DDL con la tabla + definir módulo dueño | 🔴 |
+| `VEN-03` | Alta y confirmación de venta | `VEN-01`, `VEN-02` | 🔴 |
 | `VEN-04` | Anulación de venta | `VEN-03` | 🔴 |
 | `VEN-05` | Consultas y filtros de ventas | `VEN-03` | 🔴 |
 | `VEN-06` | Remito automático por venta | `VEN-03`, DDL de remito | 🔴 |
@@ -50,8 +50,9 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 ## Orden recomendado
 
-1. **DDL de Vertabelo** (prerrequisito, no es un ticket de código).
-2. Resolver el cliente genérico accesible y el dueño de la lista de precios.
+1. **DDL corregido** (prerrequisito, no es un ticket de código): lista de precios,
+   `id_detalle_venta` y modelo actualizado.
+2. Definir el dueño de la lista de precios. El cliente genérico ya está resuelto en `CLI-09`.
 3. `VEN-01` y `VEN-02` (en paralelo).
 4. `VEN-03`.
 5. **En paralelo:** `VEN-04` y `VEN-05`.
@@ -59,45 +60,46 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 7. `VEN-13` cuando se habilite el frontend de ventas.
 8. Los diferidos (`VEN-06` a `VEN-10`) cuando existan sus módulos y su DDL.
 
-**Camino crítico:** `DDL → VEN-01/VEN-02 → VEN-03 → VEN-05 → VEN-11/VEN-12`.
+**Camino crítico:** `DDL corregido → VEN-01/VEN-02 → VEN-03 → VEN-05 → VEN-11/VEN-12`.
 
 ## Prerrequisitos (fuera del código de `venta`)
 
-### 1. DDL de Vertabelo — bloquea `VEN-01` y `VEN-02`
+### 1. DDL corregido — bloquea `VEN-01` y `VEN-02`
 
-El usuario va a pasar el export/DDL. No se inventan estructuras. Debe cubrir:
+Ya se recibió un primer export (Redgate Data Modeler, 2026-11-19) con `Venta` y `Detalle_Venta`.
+Trae `cantidad decimal(12,3)`, `precio_historico`, `subtotal`, `fecha`, `hora`, `estado`,
+`fecha_vencimiento` y FKs a `Cliente` y `Usuario`; no trae `descuento` ni `medio_pago`. **No se
+escriben entidades nuevas hasta el export corregido**, que debe incluir:
 
-- `Venta` y `Detalle_Venta` (incluido `decimal(12,3)` en cantidad).
-- La **lista de precios por tipo de cliente**: tabla, columnas y relación con `TipoCliente`.
-- `Remito` y `Detalle_Remito` (aunque sean diferidos, para no rediseñar después).
-- `id_pedido` en `Venta` (diferido, pero debe quedar previsto).
-- Confirmar si `Venta.id_estado`/`estado` es `varchar` o enum, y si `id_vendedor` e
-  `id_cliente` son FK o solo `Long` como en `incidencias`.
+- **Lista de precios por tipo de cliente** (aclaración 9): tabla, columnas y relación con
+  `TipoCliente`/`Producto`. Es la decisión 2b y hoy no existe en el modelo.
+- **`id_detalle_venta`** en `Detalle_Venta` (aclaración 11), en reemplazo de la PK compuesta
+  `(id_producto_fk, id_venta_fk)`.
+- **Modelo actualizado** (aclaración 12): `Cliente.cuit` nullable, `Insumo.stock_actual`
+  `decimal(12,3)`, estructura nueva de `Incidencia`, `Costo.id_usuario_anulacion` nullable y FK de
+  `Tipo_Incidencia` corregida. No se toca el código de esos módulos.
+- Para los diferidos, conviene corregir en el mismo export: `Detalle_Remito.id_detalle_remito`
+  `serial`, `cantidad decimal(12,3)`, columna `id_venta` en minúsculas y FK de
+  `Remito_Comprobante.id_cliente`.
+- `id_pedido` en `Venta` y seña en `Pedido` cuando se modele `VEN-09`.
 
-Hasta que llegue, **no se escriben entidades nuevas de ventas**. El esqueleto actual (`Double`,
-`estado` como `String`, sin detalle) se reemplaza, no se parchea.
+`Venta.fecha_vencimiento` se mantiene: es el plazo para pagar el saldo cuando hay seña
+(aclaración 10). Se persiste como opcional, sin regla de negocio en esta tanda.
 
-### 2. Cliente genérico accesible — bloquea `VEN-03`
+### 2. Cliente genérico accesible — resuelto en `CLI-09`
 
-`clientes` define `TipoCliente.GENERICO` y prohíbe usarlo desde la API, pero:
+El usuario autorizó tocar `clientes`. Ya están hechos:
 
-- `ClienteService` no expone un `obtenerGenerico()` ni un `findByTipoCliente`.
-- No hay inicializador (`CommandLineRunner`, `@PostConstruct`) que cree el cliente `GENERICO` en
-  la base.
+- `ClienteService.obtenerGenerico()` devuelve la entidad reservada y falla con 404 si no existe.
+- `ClienteGenericoInitializer` la crea al arrancar si falta, con `cuit` nulo y tipo `GENERICO`.
 
-El usuario autorizó **solo leer** otros módulos en esta tanda. Para el alta de venta hay que
-elegir una de estas opciones antes de `VEN-03`:
-
-1. Agregar un método de solo lectura en `ClienteService` + un inicializador en `clientes`
-   (**requiere autorización para tocar `clientes`**).
-2. Resolverlo dentro de `venta` sin modificar `clientes` (por ejemplo, recibir `id_cliente` del
-   body para mostrador, con el id del genérico cargado por configuración). Menos automático.
+`VEN-03` puede usar el servicio sin depender de un id cargado a mano.
 
 ### 3. Dueño de la lista de precios — bloquea `VEN-02`
 
-La tabla de lista de precios por tipo de cliente no existe. Hasta ver el DDL no se sabe si vive en
-`catalogo`, en `clientes` o en `venta`. Con la autorización actual (**solo leer**), `venta` puede
-consultar servicios existentes pero no agregar métodos en esos módulos.
+La tabla de lista de precios por tipo de cliente no existe. Falta ver el DDL corregido para saber
+si vive en `catalogo`, en `clientes` o en `venta`. Si queda fuera de `venta`, se necesita permiso
+para agregar ahí el servicio de consulta (la autorización de esta tanda era **solo leer**).
 
 ## Verificación del módulo
 

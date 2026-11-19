@@ -249,4 +249,31 @@ class ClienteServiceTest {
         assertThatThrownBy(() -> clienteService.cambiarEstado(1L, false))
                 .isInstanceOf(OperacionNoPermitidaException.class);
     }
+
+    // ======================= CLIENTE GENÉRICO =======================
+
+    @Test
+    @DisplayName("obtenerGenerico: devuelve la entidad reservada sin CUIT")
+    void obtenerGenerico_existe_devuelveEntidad() {
+        Cliente generico = clienteExistente(1L, TipoCliente.GENERICO, null, null);
+        when(clienteRepository.findByTipoCliente(TipoCliente.GENERICO))
+                .thenReturn(Optional.of(generico));
+
+        Cliente resultado = clienteService.obtenerGenerico();
+
+        assertThat(resultado.getId_cliente()).isEqualTo(1L);
+        assertThat(resultado.getTipoCliente()).isEqualTo(TipoCliente.GENERICO);
+        assertThat(resultado.getCuit()).isNull();
+    }
+
+    @Test
+    @DisplayName("obtenerGenerico: si no está cargado, no encontrado")
+    void obtenerGenerico_noExiste_noEncontrado() {
+        when(clienteRepository.findByTipoCliente(TipoCliente.GENERICO))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clienteService.obtenerGenerico())
+                .isInstanceOf(RecursoNoEncontradoException.class)
+                .hasMessageContaining("genérico");
+    }
 }

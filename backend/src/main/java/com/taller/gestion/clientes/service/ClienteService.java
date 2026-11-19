@@ -64,6 +64,18 @@ public class ClienteService {
         return mapearAResponse(obtenerCliente(id_cliente));
     }
 
+    /**
+     * Devuelve el cliente reservado "Consumidor final" para las ventas de mostrador.
+     * Expone la entidad para que otros módulos puedan tomar solo su id, igual que
+     * ProductoService.obtenerPorId y UsuarioService.obtenerPorId.
+     */
+    @Transactional(readOnly = true)
+    public Cliente obtenerGenerico() {
+        return clienteRepository.findByTipoCliente(TipoCliente.GENERICO)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No existe el cliente genérico del sistema"));
+    }
+
     @Transactional
     public ClienteResponseDTO update(Long id_cliente, ClienteUpdateDTO dto) {
         Cliente cliente = obtenerClienteEditable(id_cliente);

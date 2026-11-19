@@ -17,6 +17,9 @@ en orden; **Bloqueado por** indica qué tiene que estar terminado antes.
   relevamiento: se descartó el descuento fijo y no hay cuenta corriente.
 - La baja es **lógica** (`activo = false`): el cliente conserva su historial y deja de aparecer al
   vender. El cliente genérico no se puede desactivar.
+- El cliente `GENERICO` lo crea el sistema al arrancar si no existe (`CLI-09`). Tiene `cuit` nulo;
+  email y dirección son valores de sistema porque la entidad los exige. Otros módulos lo obtienen
+  con `ClienteService.obtenerGenerico()`, que devuelve la entidad para tomar solo su `id_cliente`.
 
 **Convención de nombres:** los identificadores (`id_cliente`, `id_usuario`, etc.) van en
 `snake_case`; el resto de campos, métodos y claves JSON van en `camelCase`. Las columnas de la
@@ -39,6 +42,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 | [CLI-06](CLI-06-frontend-clientes.md) | Pantalla de clientes | 03, 04, 05 | ✅ |
 | [CLI-07](CLI-07-tests.md) | Tests del módulo | 03, 04, 05 | ✅ |
 | [CLI-08](CLI-08-documentacion-swagger.md) | Documentar la API en Swagger | 03, 04, 05 | ✅ |
+| [CLI-09](CLI-09-cliente-generico-accesible.md) | Cliente genérico accesible para ventas | 05 | ✅ |
 
 ## Orden recomendado
 

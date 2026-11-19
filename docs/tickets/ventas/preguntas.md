@@ -141,6 +141,10 @@
 | 6 | Estados | **CONFIRMADA y ANULADA** | Sin `PENDIENTE`, aunque `PROMPT_CONTEXTO` lo mencione. |
 | 7 | Seña de pedidos | **Sí hay seña** | Se registra la decisión; implementación en `VEN-09`. |
 | 8 | Comprobantes | **Remito + factura completos** | Incluye entregas parciales con `Detalle_Remito`; implementación en `VEN-06` a `VEN-08`. |
+| 9 | Lista de precios vs DDL recibido | **Agregarla al modelo y re-exportar** | El DDL no traía la tabla. Se espera el export nuevo antes de `VEN-02`/`VEN-03`. |
+| 10 | `fecha_vencimiento` de `Venta` | **Se mantiene: plazo del saldo con seña** | No hay cuenta corriente, pero cuando hay seña el cliente paga el resto en un plazo; esa fecha es el vencimiento. Sin regla de negocio en esta tanda (`VEN-09`). |
+| 11 | PK de `Detalle_Venta` | **Agregar `id_detalle_venta`** | El DDL traía PK compuesta `(id_producto_fk, id_venta_fk)`. Se corregirá en el modelo para tener id propio. |
+| 12 | Export desactualizado | **Actualizar el modelo ahora** | Se corrigen `Cliente.cuit`, `Insumo.stock_actual`, `Incidencia`, `Costo` y `Tipo_Incidencia` antes de seguir con ventas. |
 
 > Las aclaraciones 7 y 8 contradicen la aclaración 3 en alcance, pero no en negocio: están aprobadas y se guardan como tickets bloqueados, no se descartan.
 
@@ -151,6 +155,11 @@
 - `Cliente.cuit` era PK `int`: un CUIT tiene 11 dígitos y no entra en `int`, y un consumidor final no tiene CUIT. **Ya resuelto en `clientes`**: `id_cliente` serial como PK y `cuit` `varchar(13)` nulo y único.
 - `Venta.medio_pago` se saca: ya decidido en `Caja`. **No se agrega** a `Venta`.
 - `Venta` necesita `estado`: **confirmada / anulada**, según aclaración 6.
-- `Venta.descuento` de la nota original: **se elimina**, según pregunta 3 y aclaración 1.
-- `Detalle_Venta.cantidad` era `int`: pasa a `decimal(12,3)`.
-- `Producto.stock_actual` era `int`: **ya resuelto en `catalogo`**, es `BigDecimal(12,3)`.
+- `Venta.descuento` de la nota original: **se elimina**, según pregunta 3 y aclaración 1. El DDL recibido tampoco lo tiene.
+- `Venta.medio_pago`: tampoco está en el DDL, coherente con que corresponde a `caja`.
+- `Venta.fecha_vencimiento`: aparece en el DDL; según aclaración 10 es el plazo para pagar el saldo cuando hay seña. Se persiste como opcional.
+- `Detalle_Venta.cantidad` era `int`: el DDL ya trae `decimal(12,3)` ✅.
+- `Detalle_Venta.precio_historico`: foto del precio al vender, no editable.
+- `Detalle_Venta` traía PK compuesta: se agrega `id_detalle_venta` (aclaración 11).
+- `Venta` no traía `id_pedido`: se agregará cuando se modele `VEN-09`.
+- `Producto.stock_actual` era `int`: **ya resuelto en `catalogo`**, es `BigDecimal(12,3)`; el DDL recibido todavía dice `int` y se corrige según aclaración 12.
