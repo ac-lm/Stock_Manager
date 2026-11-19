@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.List;
 public class ClienteController implements ClienteApi {
     private final ClienteService clienteService;
 
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','VENDEDOR')")
     @GetMapping
     public Page<ClienteResponseDTO> listar(
             @RequestParam(required = false) String busqueda,
@@ -38,20 +40,22 @@ public class ClienteController implements ClienteApi {
         return clienteService.buscarSimilares(nombre);
     }
 
-    @GetMapping("/{id}")
-    public ClienteResponseDTO obtener(@PathVariable Long id) {
-        return clienteService.findById(id);
+    @GetMapping("/{id_cliente}")
+    public ClienteResponseDTO obtener(@PathVariable Long id_cliente) {
+        return clienteService.findById(id_cliente);
     }
 
-    @PutMapping("/{id}")
-    public ClienteResponseDTO actualizar(@PathVariable Long id,
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','VENDEDOR')")
+    @PutMapping("/{id_cliente}")
+    public ClienteResponseDTO actualizar(@PathVariable Long id_cliente,
                                          @Valid @RequestBody ClienteUpdateDTO dto) {
-        return clienteService.update(id, dto);
+        return clienteService.update(id_cliente, dto);
     }
 
-    @PatchMapping("/{id}/estado")
-    public ClienteResponseDTO cambiarEstado(@PathVariable Long id,
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','VENDEDOR')")
+    @PatchMapping("/{id_cliente}/estado")
+    public ClienteResponseDTO cambiarEstado(@PathVariable Long id_cliente,
                                             @Valid @RequestBody ClienteEstadoDTO dto) {
-        return clienteService.cambiarEstado(id, dto.activo());
+        return clienteService.cambiarEstado(id_cliente, dto.activo());
     }
 }

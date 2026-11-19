@@ -9,10 +9,17 @@ import com.taller.gestion.clientes.service.ClienteService;
 import com.taller.gestion.common.exception.OperacionNoPermitidaException;
 import com.taller.gestion.common.exception.RecursoDuplicadoException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
+import com.taller.gestion.common.security.ErrorResponseWriter;
+import com.taller.gestion.common.security.RestAccessDeniedHandler;
+import com.taller.gestion.common.security.RestAuthenticationEntryPoint;
+import com.taller.gestion.common.security.SecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
@@ -28,6 +35,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ClienteController.class)
+@Import({SecurityConfig.class, RestAuthenticationEntryPoint.class,
+        RestAccessDeniedHandler.class, ErrorResponseWriter.class})
+@WithMockUser(roles = "ADMINISTRADOR")
 class ClienteControllerTest {
 
     @Autowired
@@ -38,6 +48,9 @@ class ClienteControllerTest {
 
     @MockitoBean
     private ClienteService clienteService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     private ClienteCreateDTO altaValida() {
         return new ClienteCreateDTO("20-12345678-6", "Panadería Sol", "2262-123456",
