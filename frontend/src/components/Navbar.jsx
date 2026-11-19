@@ -9,7 +9,10 @@ const LINKS = [
   { to: '/clientes', label: 'Clientes' },
 ]
 
-const LINK_ADMIN = { to: '/usuarios', label: 'Usuarios' }
+const LINKS_ADMIN = [
+  { to: '/costos', label: 'Costos' },
+  { to: '/usuarios', label: 'Usuarios' },
+]
 
 const ROLES = {
   ADMINISTRADOR: 'Administrador',
@@ -23,7 +26,7 @@ function Navbar() {
 
   if (!usuario) return null
 
-  const links = usuario.rol === 'ADMINISTRADOR' ? [...LINKS, LINK_ADMIN] : LINKS
+  const links = usuario.rol === 'ADMINISTRADOR' ? [...LINKS, ...LINKS_ADMIN] : LINKS
 
   const cerrarSesion = async () => {
     setSaliendo(true)

@@ -4,6 +4,7 @@ import RutaProtegida from './components/RutaProtegida'
 import { AuthProvider } from './context/AuthProvider'
 import { useAuth } from './context/auth-context'
 import ClientesPage from './pages/ClientesPage'
+import CostosPage from './pages/CostosPage'
 import InsumosPage from './pages/InsumosPage'
 import LoginPage from './pages/LoginPage'
 import ProductosPage from './pages/ProductosPage'
@@ -31,6 +32,7 @@ function AppShell() {
             <Route path="/proveedores" element={<ProveedoresPage />} />
             <Route path="/clientes" element={<ClientesPage />} />
             <Route element={<RutaProtegida soloAdmin />}>
+              <Route path="/costos" element={<CostosPage />} />
               <Route path="/usuarios" element={<UsuariosPage />} />
             </Route>
           </Route>
