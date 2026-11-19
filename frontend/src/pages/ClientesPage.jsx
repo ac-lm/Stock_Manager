@@ -18,9 +18,9 @@ const FORM_VACIO = {
     telefono: '',
     email: '',
     direccion: '',
-    tipo_cliente: 'CONSUMIDOR_FINAL',
+    tipoCliente: 'CONSUMIDOR_FINAL',
     observaciones: '',
-    plazo_pago_dias: '',
+    plazoPagoDias: '',
 }
 
 function ClientesPage() {
@@ -132,9 +132,9 @@ function ClientesPage() {
             telefono: cliente.telefono ?? '',
             email: cliente.email ?? '',
             direccion: cliente.direccion ?? '',
-            tipo_cliente: cliente.tipo_cliente,
+            tipoCliente: cliente.tipoCliente,
             observaciones: cliente.observaciones ?? '',
-            plazo_pago_dias: cliente.plazo_pago_dias != null ? String(cliente.plazo_pago_dias) : '',
+            plazoPagoDias: cliente.plazoPagoDias != null ? String(cliente.plazoPagoDias) : '',
         })
         setErrorForm(null)
         setError(null)
@@ -155,14 +155,14 @@ function ClientesPage() {
         setForm((prev) => ({ ...prev, [campo]: event.target.value }))
     }
 
-    const esGranCliente = form.tipo_cliente === 'GRAN_CLIENTE'
+    const esGranCliente = form.tipoCliente === 'GRAN_CLIENTE'
 
     // Si era gran cliente con plazo y ahora cambia de tipo, pierde sus condiciones comerciales
     const perderaCondiciones =
         !!editando &&
-        editando.tipo_cliente === 'GRAN_CLIENTE' &&
-        !!editando.plazo_pago_dias &&
-        form.tipo_cliente !== 'GRAN_CLIENTE'
+        editando.tipoCliente === 'GRAN_CLIENTE' &&
+        !!editando.plazoPagoDias &&
+        form.tipoCliente !== 'GRAN_CLIENTE'
 
     const guardar = async (event) => {
         event.preventDefault()
@@ -185,9 +185,9 @@ function ClientesPage() {
             telefono: form.telefono.trim() || null,
             email: form.email.trim(),
             direccion: form.direccion.trim(),
-            tipo_cliente: form.tipo_cliente,
+            tipoCliente: form.tipoCliente,
             observaciones: form.observaciones.trim() || null,
-            plazo_pago_dias: esGranCliente && form.plazo_pago_dias !== '' ? Number(form.plazo_pago_dias) : null,
+            plazoPagoDias: esGranCliente && form.plazoPagoDias !== '' ? Number(form.plazoPagoDias) : null,
         }
 
         try {
@@ -284,14 +284,14 @@ function ClientesPage() {
                             <tr key={cliente.id_cliente} className={cliente.activo ? '' : 'fila-inactiva'}>
                                 <td>{cliente.nombre}</td>
                                 <td className="mono">{cliente.cuit || '—'}</td>
-                                <td>{etiquetaTipo(cliente.tipo_cliente)}</td>
+                                <td>{etiquetaTipo(cliente.tipoCliente)}</td>
                                 <td>{cliente.telefono || '—'}</td>
                                 <td>{cliente.email || '—'}</td>
                                 <td>
-                                    {cliente.tipo_cliente !== 'GRAN_CLIENTE'
+                                    {cliente.tipoCliente !== 'GRAN_CLIENTE'
                                         ? '—'
-                                        : cliente.plazo_pago_dias
-                                            ? `${cliente.plazo_pago_dias} días`
+                                        : cliente.plazoPagoDias
+                                            ? `${cliente.plazoPagoDias} días`
                                             : 'Contado'}
                                 </td>
                                 <td>
@@ -300,7 +300,7 @@ function ClientesPage() {
                     </span>
                                 </td>
                                 <td className="table-actions">
-                                    {cliente.tipo_cliente === 'GENERICO' ? (
+                                    {cliente.tipoCliente === 'GENERICO' ? (
                                         <span className="mono">Reservado</span>
                                     ) : (
                                         <>
@@ -400,7 +400,7 @@ function ClientesPage() {
                         <div className="form-row">
                             <label className="field">
                                 <span>Tipo de cliente *</span>
-                                <select value={form.tipo_cliente} onChange={cambiarCampo('tipo_cliente')} required>
+                                <select value={form.tipoCliente} onChange={cambiarCampo('tipoCliente')} required>
                                     {TIPOS.map((tipo) => (
                                         <option key={tipo.value} value={tipo.value}>
                                             {tipo.label}
@@ -424,8 +424,8 @@ function ClientesPage() {
 
                         {perderaCondiciones && (
                             <div className="aviso" role="alert">
-                                Al cambiar a {etiquetaTipo(form.tipo_cliente)}, las condiciones comerciales (plazo de
-                                pago de {editando.plazo_pago_dias} días) ya no se tendrán en cuenta y se eliminarán al
+                                Al cambiar a {etiquetaTipo(form.tipoCliente)}, las condiciones comerciales (plazo de
+                                pago de {editando.plazoPagoDias} días) ya no se tendrán en cuenta y se eliminarán al
                                 guardar.
                             </div>
                         )}
@@ -438,8 +438,8 @@ function ClientesPage() {
                                     min="0"
                                     max="365"
                                     step="1"
-                                    value={form.plazo_pago_dias}
-                                    onChange={cambiarCampo('plazo_pago_dias')}
+                                    value={form.plazoPagoDias}
+                                    onChange={cambiarCampo('plazoPagoDias')}
                                     placeholder="Vacío = contado"
                                 />
                             </label>

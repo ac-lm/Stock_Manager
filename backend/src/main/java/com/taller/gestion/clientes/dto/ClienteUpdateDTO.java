@@ -30,7 +30,7 @@ public record ClienteUpdateDTO(
         @Schema(description = "Tipo de cliente. GENERICO está reservado para el sistema",
                 allowableValues = {"GRAN_CLIENTE", "CONSUMIDOR_FINAL"}, example = "GRAN_CLIENTE")
         @NotNull(message = "El tipo de cliente es obligatorio")
-        TipoCliente tipo_cliente,
+        TipoCliente tipoCliente,
 
         @Schema(description = "Observaciones", nullable = true)
         @Size(max = 250)
@@ -40,7 +40,7 @@ public record ClienteUpdateDTO(
                 example = "30", nullable = true)
         @Min(value = 0, message = "El plazo no puede ser negativo")
         @Max(value = 365, message = "El plazo no puede superar los 365 días")
-        Integer plazo_pago_dias
+        Integer plazoPagoDias
 ) {
         public ClienteUpdateDTO {
                 nombre = TextoUtil.limpiar(nombre);

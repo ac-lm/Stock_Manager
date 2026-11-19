@@ -20,7 +20,6 @@ import java.util.List;
         description = "Alta, búsqueda, edición y baja lógica de clientes. "
                 + "El cliente genérico no se puede modificar ni desactivar.")
 public interface ClienteApi {
-
     @Operation(summary = "Buscar clientes",
             description = "Busca por nombre o razón social y por CUIT (con o sin guiones). "
                     + "Por defecto devuelve solo los clientes activos.")
@@ -39,7 +38,8 @@ public interface ClienteApi {
             @ApiResponse(responseCode = "404", description = "No existe un cliente con ese id",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ClienteResponseDTO obtener(@Parameter(description = "Id del cliente", example = "1") Long id);
+    ClienteResponseDTO obtener(
+            @Parameter(description = "Id del cliente", example = "1") Long id_cliente);
 
     @Operation(summary = "Registrar un cliente",
             description = "El CUIT es obligatorio para grandes clientes y opcional para el resto. "
@@ -66,8 +66,9 @@ public interface ClienteApi {
             @ApiResponse(responseCode = "409", description = "CUIT duplicado o cliente genérico",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ClienteResponseDTO actualizar(@Parameter(description = "Id del cliente", example = "1") Long id,
-                                  ClienteUpdateDTO dto);
+    ClienteResponseDTO actualizar(
+            @Parameter(description = "Id del cliente", example = "1") Long id_cliente,
+            ClienteUpdateDTO dto);
 
     @Operation(summary = "Desactivar o reactivar un cliente",
             description = "Baja lógica: el cliente no se borra, conserva su historial y deja de "
@@ -81,8 +82,9 @@ public interface ClienteApi {
             @ApiResponse(responseCode = "409", description = "Es el cliente genérico",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ClienteResponseDTO cambiarEstado(@Parameter(description = "Id del cliente", example = "1") Long id,
-                                     ClienteEstadoDTO dto);
+    ClienteResponseDTO cambiarEstado(
+            @Parameter(description = "Id del cliente", example = "1") Long id_cliente,
+            ClienteEstadoDTO dto);
 
     @Operation(summary = "Buscar clientes con nombre parecido",
             description = "Para avisar al registrar un cliente si ya existe uno similar. No distingue "

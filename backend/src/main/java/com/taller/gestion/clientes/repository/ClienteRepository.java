@@ -28,13 +28,15 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
                          @Param("incluirInactivos") boolean incluirInactivos,
                          Pageable pageable);
 
-    @Query("SELECT COUNT(c) > 0 FROM Cliente c WHERE c.cuit = :cuit AND c.id_cliente <> :id")
-    boolean existsByCuitAndIdNot(@Param("cuit") String cuit, @Param("id") Long id);
+    @Query("SELECT COUNT(c) > 0 FROM Cliente c "
+            + "WHERE c.cuit = :cuit AND c.id_cliente <> :id_cliente")
+    boolean existsByCuitAndIdNot(@Param("cuit") String cuit,
+                                 @Param("id_cliente") Long id_cliente);
 
     @Query("""
     SELECT c FROM Cliente c
-    WHERE c.tipo_cliente <> com.taller.gestion.clientes.entity.TipoCliente.GENERICO
-      AND c.nombre_normalizado LIKE CONCAT('%', :texto, '%')
+    WHERE c.tipoCliente <> com.taller.gestion.clientes.entity.TipoCliente.GENERICO
+      AND c.nombreNormalizado LIKE CONCAT('%', :texto, '%')
     ORDER BY c.nombre
     """)
     List<Cliente> buscarSimilares(@Param("texto") String texto, Pageable pageable);

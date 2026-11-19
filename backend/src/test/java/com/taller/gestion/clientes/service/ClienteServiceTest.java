@@ -54,9 +54,9 @@ class ClienteServiceTest {
         c.setNombre("Cliente Existente");
         c.setEmail("existente@mail.com");
         c.setDireccion("Calle 2 456");
-        c.setTipo_cliente(tipo);
+        c.setTipoCliente(tipo);
         c.setCuit(cuit);
-        c.setPlazo_pago_dias(plazo);
+        c.setPlazoPagoDias(plazo);
         return c;
     }
 
@@ -73,7 +73,7 @@ class ClienteServiceTest {
                 crearDto("20123456786", TipoCliente.GRAN_CLIENTE, 30));
 
         assertThat(resultado.cuit()).isEqualTo(CUIT_VALIDO);
-        assertThat(resultado.plazo_pago_dias()).isEqualTo(30);
+        assertThat(resultado.plazoPagoDias()).isEqualTo(30);
         verify(clienteRepository).save(any(Cliente.class));
     }
 
@@ -178,7 +178,7 @@ class ClienteServiceTest {
                 actualizarDto(CUIT_VALIDO, TipoCliente.GRAN_CLIENTE, 45));
 
         assertThat(resultado.cuit()).isEqualTo(CUIT_VALIDO);
-        assertThat(resultado.plazo_pago_dias()).isEqualTo(45);
+        assertThat(resultado.plazoPagoDias()).isEqualTo(45);
     }
 
     @Test
@@ -203,8 +203,8 @@ class ClienteServiceTest {
         ClienteResponseDTO resultado = clienteService.update(1L,
                 actualizarDto(CUIT_VALIDO, TipoCliente.CONSUMIDOR_FINAL, 30));
 
-        assertThat(resultado.plazo_pago_dias()).isNull();
-        assertThat(existente.getPlazo_pago_dias()).isNull();
+        assertThat(resultado.plazoPagoDias()).isNull();
+        assertThat(existente.getPlazoPagoDias()).isNull();
     }
 
     @Test

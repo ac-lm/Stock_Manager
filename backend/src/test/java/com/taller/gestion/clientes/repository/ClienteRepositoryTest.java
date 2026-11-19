@@ -39,7 +39,7 @@ class ClienteRepositoryTest {
         c.setCuit(cuit);
         c.setEmail("mail@mail.com");
         c.setDireccion("Calle 1 123");
-        c.setTipo_cliente(tipo);
+        c.setTipoCliente(tipo);
         c.setActivo(activo);
         return clienteRepository.saveAndFlush(c);
     }

@@ -87,7 +87,7 @@ class ClienteServiceBusquedaTest {
         c.setId_cliente(7L);
         c.setNombre("José Pérez");
         c.setCuit("20-12345678-6");
-        c.setTipo_cliente(TipoCliente.GRAN_CLIENTE);
+        c.setTipoCliente(TipoCliente.GRAN_CLIENTE);
         c.setActivo(false);
         when(clienteRepository.buscarSimilares(eq("jose perez"), any())).thenReturn(List.of(c));
 

@@ -16,7 +16,7 @@ public record ClienteSimilarDTO(
         String cuit,
 
         @Schema(description = "Tipo de cliente", example = "GRAN_CLIENTE")
-        TipoCliente tipo_cliente,
+        TipoCliente tipoCliente,
 
         @Schema(description = "Si es false, el cliente existe pero está dado de baja y conviene reactivarlo",
                 example = "true")

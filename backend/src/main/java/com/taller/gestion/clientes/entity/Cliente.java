@@ -33,8 +33,8 @@ public class Cliente {
     private String direccion;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private TipoCliente tipo_cliente;
+    @Column(name = "tipo_cliente", nullable = false, length = 20)
+    private TipoCliente tipoCliente;
 
     @Column(name = "observaciones", length = 250)
     private String observaciones;
@@ -43,14 +43,14 @@ public class Cliente {
     private boolean activo = true;
 
     @Column(name = "plazo_pago_dias")
-    private Integer plazo_pago_dias;
+    private Integer plazoPagoDias;
 
     @Column(name = "nombre_normalizado", length = 50, nullable = false)
-    private String nombre_normalizado;
+    private String nombreNormalizado;
 
     @PrePersist
     @PreUpdate
     private void actualizarNombreNormalizado() {
-        this.nombre_normalizado = TextoUtil.normalizarParaBusqueda(this.nombre);
+        this.nombreNormalizado = TextoUtil.normalizarParaBusqueda(this.nombre);
     }
 }

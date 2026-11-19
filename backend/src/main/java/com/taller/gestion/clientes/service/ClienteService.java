@@ -40,11 +40,11 @@ public class ClienteService {
 
     @Transactional
     public ClienteResponseDTO save(ClienteCreateDTO dto) {
-        validarTipoNoGenerico(dto.tipo_cliente());
-        validarCondicionesComerciales(dto.tipo_cliente(), dto.plazo_pago_dias());
+        validarTipoNoGenerico(dto.tipoCliente());
+        validarCondicionesComerciales(dto.tipoCliente(), dto.plazoPagoDias());
 
         String cuit = normalizarCuit(dto.cuit());
-        validarCuitYTipoCliente(cuit, dto.tipo_cliente(), null);
+        validarCuitYTipoCliente(cuit, dto.tipoCliente(), null);
 
         Cliente cliente = new Cliente();
         cliente.setCuit(cuit);
@@ -52,44 +52,44 @@ public class ClienteService {
         cliente.setEmail(dto.email());
         cliente.setTelefono(dto.telefono());
         cliente.setDireccion(dto.direccion());
-        cliente.setTipo_cliente(dto.tipo_cliente());
+        cliente.setTipoCliente(dto.tipoCliente());
         cliente.setObservaciones(dto.observaciones());
-        cliente.setPlazo_pago_dias(dto.plazo_pago_dias());
+        cliente.setPlazoPagoDias(dto.plazoPagoDias());
 
         return mapearAResponse(clienteRepository.save(cliente));
     }
 
     @Transactional(readOnly = true)
-    public ClienteResponseDTO findById(Long id) {
-        return mapearAResponse(obtenerCliente(id));
+    public ClienteResponseDTO findById(Long id_cliente) {
+        return mapearAResponse(obtenerCliente(id_cliente));
     }
 
     @Transactional
-    public ClienteResponseDTO update(Long id, ClienteUpdateDTO dto) {
-        Cliente cliente = obtenerClienteEditable(id);
+    public ClienteResponseDTO update(Long id_cliente, ClienteUpdateDTO dto) {
+        Cliente cliente = obtenerClienteEditable(id_cliente);
 
-        validarTipoNoGenerico(dto.tipo_cliente());
+        validarTipoNoGenerico(dto.tipoCliente());
         String cuit = normalizarCuit(dto.cuit());
 
-        validarCuitYTipoCliente(cuit, dto.tipo_cliente(), id);
+        validarCuitYTipoCliente(cuit, dto.tipoCliente(), id_cliente);
 
-        Integer plazo = dto.tipo_cliente() == TipoCliente.GRAN_CLIENTE ? dto.plazo_pago_dias() : null;
-        cliente.setPlazo_pago_dias(plazo);
+        Integer plazo = dto.tipoCliente() == TipoCliente.GRAN_CLIENTE ? dto.plazoPagoDias() : null;
+        cliente.setPlazoPagoDias(plazo);
 
         cliente.setCuit(cuit);
         cliente.setNombre(dto.nombre());
         cliente.setTelefono(dto.telefono());
         cliente.setEmail(dto.email());
         cliente.setDireccion(dto.direccion());
-        cliente.setTipo_cliente(dto.tipo_cliente());
+        cliente.setTipoCliente(dto.tipoCliente());
         cliente.setObservaciones(dto.observaciones());
 
         return mapearAResponse(cliente);
     }
 
     @Transactional
-    public ClienteResponseDTO cambiarEstado(Long id, boolean activo) {
-        Cliente cliente = obtenerClienteEditable(id);
+    public ClienteResponseDTO cambiarEstado(Long id_cliente, boolean activo) {
+        Cliente cliente = obtenerClienteEditable(id_cliente);
         cliente.setActivo(activo);
         return mapearAResponse(cliente);
     }
@@ -102,7 +102,7 @@ public class ClienteService {
         }
         return clienteRepository.buscarSimilares(texto, PageRequest.of(0, 5)).stream()
                 .map(c -> new ClienteSimilarDTO(c.getId_cliente(), c.getNombre(), c.getCuit(),
-                        c.getTipo_cliente(), c.isActivo()))
+                        c.getTipoCliente(), c.isActivo()))
                 .toList();
     }
 
@@ -113,14 +113,15 @@ public class ClienteService {
         }
     }
 
-    private Cliente obtenerCliente(Long id) {
-        return clienteRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Cliente no encontrado con id " + id));
+    private Cliente obtenerCliente(Long id_cliente) {
+        return clienteRepository.findById(id_cliente)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Cliente no encontrado con id " + id_cliente));
     }
 
-    private Cliente obtenerClienteEditable(Long id) {
-        Cliente cliente = obtenerCliente(id);
-        if (cliente.getTipo_cliente() == TipoCliente.GENERICO) {
+    private Cliente obtenerClienteEditable(Long id_cliente) {
+        Cliente cliente = obtenerCliente(id_cliente);
+        if (cliente.getTipoCliente() == TipoCliente.GENERICO) {
             throw new OperacionNoPermitidaException("El cliente genérico no se puede modificar");
         }
         return cliente;
@@ -165,10 +166,10 @@ public class ClienteService {
                 cliente.getTelefono(),
                 cliente.getEmail(),
                 cliente.getDireccion(),
-                cliente.getTipo_cliente(),
+                cliente.getTipoCliente(),
                 cliente.getObservaciones(),
                 cliente.isActivo(),
-                cliente.getPlazo_pago_dias()
+                cliente.getPlazoPagoDias()
         );
     }
 

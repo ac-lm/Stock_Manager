@@ -29,7 +29,7 @@ public record ClienteResponseDTO(
 
         @Schema(description = "Tipo de cliente. GENERICO está reservado para el sistema",
                 allowableValues = {"GRAN_CLIENTE", "CONSUMIDOR_FINAL"}, example = "GRAN_CLIENTE")
-        TipoCliente tipo_cliente,
+        TipoCliente tipoCliente,
 
         @Schema(description = "Observaciones", nullable = true)
         String observaciones,
@@ -40,5 +40,5 @@ public record ClienteResponseDTO(
 
         @Schema(description = "Plazo de pago en días. Solo para grandes clientes; vacío significa contado",
                 example = "30", nullable = true)
-        Integer plazo_pago_dias
+        Integer plazoPagoDias
 ) { }
