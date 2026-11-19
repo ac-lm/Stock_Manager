@@ -39,9 +39,9 @@ dependencias resueltas.
   incidencias con descuento, confirmar ventas, recibir pedidos ni calcular costos.
 - **`usuario` es el segundo.** Varios módulos necesitan validar y registrar quién hizo cada cosa.
 - **`catalogo`, `clientes`, `proveedores` y `common` ya están**, así que no bloquean a nadie.
-- **`costos` tiene el backend completo** (modelo, tipos, alta, edición, anulación, filtros,
-  totales, tests y Swagger); le faltan la pantalla y las integraciones con caja e ingresos de
-  mercadería.
+- **`costos` tiene el backend y la pantalla completos** (modelo, tipos, alta, edición, anulación,
+  filtros, totales, tests, Swagger y frontend); le faltan las integraciones con caja e ingresos de
+  mercadería y la auditoría de monto.
 - **`reportes` va último**: depende de que existan datos de todos los módulos.
 - **`auditoria` es transversal**: conviene dejarla para cuando los módulos principales ya generen eventos.
 

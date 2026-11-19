@@ -41,7 +41,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 | [CST-08](CST-08-auditoria-de-monto.md) | Auditar cambios de monto | 04 | 🟢 |
 | [CST-09](CST-09-tests.md) | Tests del módulo | 03, 04, 07 | ✅ |
 | [CST-10](CST-10-documentacion-swagger.md) | Documentar la API en Swagger | 03, 04, 07 | ✅ |
-| [CST-11](CST-11-frontend-costos.md) | Pantalla de costos | 02, 03, 04, 07 | 🟢 |
+| [CST-11](CST-11-frontend-costos.md) | Pantalla de costos | 02, 03, 04, 07 | ✅ |
 
 ## Orden recomendado
 
@@ -71,6 +71,14 @@ cd backend
 ./mvnw -o test -Dtest='com.taller.gestion.costos.**,UsuarioServiceAutenticadoTest'
 ```
 
+Verificación del frontend (pantalla de costos):
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
 Prueba manual en una base limpia:
 
 1. Arrancar backend y frontend e iniciar sesión como administrador.
@@ -84,7 +92,6 @@ Prueba manual en una base limpia:
 
 ## Fuera de alcance
 
-- Pantalla de costos: todavía no existe (ver `CST-11`).
 - Vinculación con egresos de caja y anulación en cascada (ver `CST-05`).
 - Generación automática del costo de insumos desde el ingreso de mercadería (ver `CST-06`).
 - Liquidación de sueldos por persona: se registra un total por período con observación.

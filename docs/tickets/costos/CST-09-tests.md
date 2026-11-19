@@ -44,6 +44,9 @@ cd backend
 > Los tests de repositorio levantan un contenedor PostgreSQL. Al apagar el contenedor, Surefire
 > puede imprimir `Surefire is going to kill self fork JVM`; los tests igualmente pasan.
 
+> El estado ✅ es para el alcance actual. Cuando se conecten `CST-05`, `CST-06` y `CST-08` habrá
+> que agregar tests para esos flujos nuevos.
+
 ## Archivos
 
 - `backend/src/test/java/com/taller/gestion/costos/service/CostoServiceTest.java`
