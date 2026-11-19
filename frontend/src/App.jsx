@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage'
 import ProductosPage from './pages/ProductosPage'
 import ProveedoresPage from './pages/ProveedoresPage'
 import UsuariosPage from './pages/UsuariosPage'
+import VentasPage from './pages/VentasPage'
 import './styles/App.css'
 
 function AppShell() {
@@ -31,6 +32,7 @@ function AppShell() {
             <Route path="/productos" element={<ProductosPage />} />
             <Route path="/proveedores" element={<ProveedoresPage />} />
             <Route path="/clientes" element={<ClientesPage />} />
+            <Route path="/ventas" element={<VentasPage />} />
             <Route element={<RutaProtegida soloAdmin />}>
               <Route path="/costos" element={<CostosPage />} />
               <Route path="/usuarios" element={<UsuariosPage />} />

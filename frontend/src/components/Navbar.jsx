@@ -7,6 +7,7 @@ const LINKS = [
   { to: '/productos', label: 'Productos' },
   { to: '/proveedores', label: 'Proveedores' },
   { to: '/clientes', label: 'Clientes' },
+  { to: '/ventas', label: 'Ventas' },
 ]
 
 const LINKS_ADMIN = [
