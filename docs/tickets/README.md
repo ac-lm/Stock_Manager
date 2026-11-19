@@ -29,7 +29,7 @@ dependencias resueltas.
 | `ventas` | 🔴 | `catalogo`, `clientes`, `usuario`, `stock` | `caja`, `reportes`, `auditoria` |
 | `pedidos` | 🔴 | `clientes`, `catalogo`, `stock` | `reportes` |
 | `caja` | 🔴 | `ventas`, `usuario` | `reportes` |
-| `costos` | 🔴 | `catalogo`, `proveedores`, `stock` | `reportes` |
+| `costos` | 🟡 | `catalogo`, `proveedores`, `stock`, `caja` (integraciones) | `reportes` |
 | `auditoria` | 🔴 | `usuario` (+ eventos de los demás módulos) | — (transversal) |
 | `reportes` | 🔴 | Todos | — |
 
@@ -39,6 +39,9 @@ dependencias resueltas.
   incidencias con descuento, confirmar ventas, recibir pedidos ni calcular costos.
 - **`usuario` es el segundo.** Varios módulos necesitan validar y registrar quién hizo cada cosa.
 - **`catalogo`, `clientes`, `proveedores` y `common` ya están**, así que no bloquean a nadie.
+- **`costos` tiene el backend completo** (modelo, tipos, alta, edición, anulación, filtros,
+  totales, tests y Swagger); le faltan la pantalla y las integraciones con caja e ingresos de
+  mercadería.
 - **`reportes` va último**: depende de que existan datos de todos los módulos.
 - **`auditoria` es transversal**: conviene dejarla para cuando los módulos principales ya generen eventos.
 
@@ -46,8 +49,11 @@ dependencias resueltas.
 
 | Módulo | Backlog |
 |---|---|
+| `clientes` | [`clientes/backlog.md`](clientes/backlog.md) |
+| `costos` | [`costos/backlog.md`](costos/backlog.md) |
 | `incidencias` | [`incidencias/backlog.md`](incidencias/backlog.md) |
 | `incidencias` (preguntas) | [`incidencias/preguntas.md`](incidencias/preguntas.md) |
+| `usuarios` | [`usuarios/backlog.md`](usuarios/backlog.md) |
 
 ## Seguimiento en Trello
 
