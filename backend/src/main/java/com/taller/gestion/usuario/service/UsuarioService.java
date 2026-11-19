@@ -14,6 +14,9 @@ import com.taller.gestion.usuario.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +31,8 @@ public class UsuarioService {
 
     private static final int PASSWORD_MIN = 8;
     private static final int PASSWORD_MAX_BYTES = 72;
+    private static final AuthenticationTrustResolver TRUST_RESOLVER =
+            new AuthenticationTrustResolverImpl();
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -53,6 +58,29 @@ public class UsuarioService {
         return usuarioRepository.findById(id_usuario)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "Usuario no encontrado con id " + id_usuario));
+    }
+
+    /**
+     * Punto de acceso para otros módulos: devuelve la entidad del usuario logueado en la
+     * sesión actual. Se usa el email como nombre de usuario porque así lo carga
+     * {@link UsuarioUserDetailsService}.
+     */
+    @Transactional(readOnly = true)
+    public Usuario obtenerAutenticado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || TRUST_RESOLVER.isAnonymous(authentication)) {
+            throw new AuthenticationCredentialsNotFoundException(
+                    "Se requiere iniciar sesión para realizar esta operación");
+        }
+
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "Usuario autenticado no encontrado: " + authentication.getName()));
+        if (!usuario.isActivo()) {
+            throw new OperacionNoPermitidaException("El usuario autenticado está desactivado");
+        }
+        return usuario;
     }
 
     @Transactional(readOnly = true)

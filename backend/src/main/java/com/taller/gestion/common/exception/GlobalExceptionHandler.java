@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -48,7 +49,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
         String mensaje = ex instanceof DisabledException
                 ? "La cuenta está deshabilitada"
-                : "Email o contraseña incorrectos";
+                : ex instanceof AuthenticationCredentialsNotFoundException
+                        ? ex.getMessage()
+                        : "Email o contraseña incorrectos";
         return build(HttpStatus.UNAUTHORIZED, mensaje, null);
     }
 
