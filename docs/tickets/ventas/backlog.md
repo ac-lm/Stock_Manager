@@ -16,8 +16,9 @@ acordados pero diferidos quedan como tickets 🔴 con su bloqueante explícito.
 - Alta y confirmación ocurren en el mismo paso. Estados: `CONFIRMADA` / `ANULADA`, sin
   `PENDIENTE`.
 - El vendedor se toma de `UsuarioService.obtenerAutenticado()`, nunca del body.
-- Falta stock **no bloquea**: se confirma con aviso y el saldo quedaría negativo. En esta tanda
-  **no se descuenta stock** (ver `VEN-10`).
+- Falta stock **bloquea**: cuando se implemente `VEN-10`, la venta se rechaza con `409` y no se
+  registra movimiento. No se permite stock negativo. En esta tanda **no se descuenta stock**
+  (ver `VEN-10`).
 - `Venta.medio_pago` no existe: corresponde a `caja`.
 - Los totales se calculan en el backend desde los detalles; nunca se confían al cliente.
 
@@ -133,7 +134,8 @@ Prueba manual en una base limpia:
 3. Dar de alta una venta a un gran cliente: el precio unitario debe salir de su lista por tipo.
 4. Intentar cambiar el precio en el body: debe ignorarse; no existe campo de descuento.
 5. Cargar una cantidad decimal: el total debe calcularse en backend con `BigDecimal`.
-6. Vender más de lo que hay en stock: debe confirmar con aviso, sin 409.
+6. Vender más de lo que hay en stock: en esta tanda se confirma porque todavía no se descuenta
+   stock; cuando entre `VEN-10` debe rechazarse con `409`.
 7. Anular la venta: queda `ANULADA`, no se borra y no se puede volver a anular.
 8. Verificar que `id_vendedor` es el usuario de la sesión, no el del body.
 

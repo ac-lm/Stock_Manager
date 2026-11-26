@@ -101,6 +101,10 @@ flowchart LR
 
 ### STOCK-01 — Movimiento de stock y ajuste
 
+> **Nota:** el alcance y el estado de este ticket se gestionan ahora en
+> [`../stock/backlog.md`](../stock/backlog.md#stock-01--modelo-y-entidad-movimiento_stock).
+> Esta sección queda como registro histórico del relevamiento de incidencias.
+
 | Campo | Valor |
 |---|---|
 | Estado | 🔴 Bloqueado por `USU-01` |

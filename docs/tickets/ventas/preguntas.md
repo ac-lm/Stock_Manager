@@ -58,11 +58,15 @@
 
 ### 8. Si al vender no alcanza el stock, ¿qué pasa?
 
-- b) ★ Deja confirmar con un aviso, y el stock queda negativo hasta que se ajuste. _Motivo: si el producto está físicamente en el mostrador, el sistema no debería frenar la venta por un error de carga anterior._
+- a) ★ Rechazar la venta con `409`, sin movimiento de stock. _Motivo: el stock nunca puede quedar negativo; es la regla general del proyecto y coincide con `incidencias`._
+- b) (decisión original del relevamiento, **revertida el 26/11/2026**) Dejar confirmar con un aviso y stock negativo hasta que se ajuste.
 
-**Respuesta:** b) Confirmar con aviso y stock negativo (aclaración 2).
+**Respuesta vigente:** a) No se confirma la venta si no hay stock suficiente.
 
-**Impacto:** la venta no se rechaza por falta de stock. Esta regla contradice la regla general de `PROMPT_CONTEXTO` ("stock nunca negativo") y lo que se hizo en `incidencias` (409); prevaliza la decisión del relevamiento. En esta tanda **no se descuenta stock** porque el módulo `stock` no existe (ver `VEN-10`).
+**Impacto:** cuando se implemente `VEN-10`, `StockService` valida el saldo antes de descontar y
+devuelve `409` sin guardar nada. La respuesta b quedó como registro histórico: se resolvió la
+contradicción con `PROMPT_CONTEXTO` ("stock nunca negativo") a favor de la regla general. En esta
+tanda **no se descuenta stock** porque el módulo `stock` todavía no existe (ver `VEN-10`).
 
 ---
 
@@ -134,7 +138,7 @@
 | # | Pregunta | Respuesta | Consecuencia |
 |---|---|---|---|
 | 1 | Precios: 2b vs 3 vs 6a | **Lista por tipo de cliente** | Prevalecen 2b y 3. Se descarta 6a: no hay campo `descuento` ni precio editable al vender. |
-| 2 | Stock negativo vs regla general del contexto | **Confirmar con stock negativo** | Prevalece 8b. Actualizar la regla general del contexto cuando se revise `PROMPT_CONTEXTO.md`. |
+| 2 | Stock negativo vs regla general del contexto | **No se permite stock negativo** | Se revierte 8b el 26/11/2026. Prevalece la regla general; `VEN-10` actualizado en consecuencia. |
 | 3 | Alcance de la primera tanda | **Solo venta + detalle** | Sin stock, pedidos, caja, remito ni factura. |
 | 4 | Autorización para tocar otros módulos | **Solo leer otros módulos** | Se usan servicios públicos existentes. Si falta un método en `clientes`/`catalogo`, se avisa antes de agregarlo. |
 | 5 | Fuente del esquema | **DDL de Vertabelo** | El usuario va a pasar el export; no se inventan tablas nuevas. |

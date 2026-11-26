@@ -39,6 +39,8 @@ dependencias resueltas.
   incidencias con descuento, confirmar ventas, recibir pedidos ni calcular costos.
 - **`usuario` es el segundo.** Varios módulos necesitan validar y registrar quién hizo cada cosa.
 - **`catalogo`, `clientes`, `proveedores` y `common` ya están**, así que no bloquean a nadie.
+- **`stock` tiene el backlog definido y revisado** ([`stock/backlog.md`](stock/backlog.md));
+  queda listo para implementar cuando se dé la señal.
 - **`costos` tiene el backend y la pantalla completos** (modelo, tipos, alta, edición, anulación,
   filtros, totales, tests, Swagger y frontend); le faltan las integraciones con caja e ingresos de
   mercadería y la auditoría de monto.
@@ -53,6 +55,8 @@ dependencias resueltas.
 | `costos` | [`costos/backlog.md`](costos/backlog.md) |
 | `incidencias` | [`incidencias/backlog.md`](incidencias/backlog.md) |
 | `incidencias` (preguntas) | [`incidencias/preguntas.md`](incidencias/preguntas.md) |
+| `stock` | [`stock/backlog.md`](stock/backlog.md) |
+| `stock` (preguntas) | [`stock/preguntas.md`](stock/preguntas.md) |
 | `ventas` | [`ventas/backlog.md`](ventas/backlog.md) |
 | `ventas` (preguntas) | [`ventas/preguntas.md`](ventas/preguntas.md) |
 | `usuarios` | [`usuarios/backlog.md`](usuarios/backlog.md) |

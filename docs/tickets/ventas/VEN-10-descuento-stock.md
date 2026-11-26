@@ -18,12 +18,14 @@
 ## Criterios de aceptación
 
 - [ ] El descuento ocurre en la misma transacción que la venta.
-- [ ] Falta de stock **no bloquea** (decisión 8b): se confirma con aviso y el saldo queda negativo.
-- [ ] Anular una venta define si se revierte el movimiento.
+- [ ] Falta de stock **bloquea** con `409`: la venta no se confirma y no se registra movimiento.
+      No se permite stock negativo.
+- [ ] Anular una venta revierte el movimiento (confirmado con `CAJA-07`).
 - [ ] No se descuenta dos veces si se reintenta el alta.
 
 ## Notas
 
-Esta regla contradice la regla general de `PROMPT_CONTEXTO` ("stock nunca negativo") y lo hecho en
-`incidencias` (409). Prevalece la decisión del relevamiento. El DDL ya trae `Movimiento_Stock` con
-`id_venta` nullable.
+La decisión 8b del relevamiento (confirmar con stock negativo) quedó **revertida el 26/11/2026**:
+prevalece la regla general "`stock` nunca negativo", igual que en `incidencias` (`409`). Ver
+[`preguntas.md`](preguntas.md#8-si-al-vender-no-alcanza-el-stock-qué-pasa). El DDL ya trae
+`Movimiento_Stock` con `id_venta` nullable.

@@ -243,7 +243,9 @@ sesión (ingresos − egresos) y puede ser negativo; el de `EFECTIVO` no puede s
 Además de las documentadas, el modelo de Vertabelo contempla tablas que todavía no están
 implementadas en el backend:
 
-- `Movimiento_Stock`.
+- `Movimiento_Stock`: estructura propuesta y decisiones en
+  [`tickets/stock/backlog.md`](tickets/stock/backlog.md#stock-01--modelo-y-entidad-movimiento_stock).
+  Se documenta acá una vez implementada.
 - `Pedido` y `Detalle_Pedido`.
 - `Auditoria`.
 - `Ingreso_Mercaderia` y las tablas restantes del modelo.
