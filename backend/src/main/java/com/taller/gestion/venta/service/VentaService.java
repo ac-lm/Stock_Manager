@@ -1,5 +1,13 @@
 package com.taller.gestion.venta.service;
 
+import com.taller.gestion.caja.dto.CobroVentaDTO;
+import com.taller.gestion.caja.entity.ConceptoMovimientoCaja;
+import com.taller.gestion.caja.entity.EstadoSesionCaja;
+import com.taller.gestion.caja.entity.MovimientoCaja;
+import com.taller.gestion.caja.entity.SesionCaja;
+import com.taller.gestion.caja.entity.TipoMovimientoCaja;
+import com.taller.gestion.caja.repository.MovimientoCajaRepository;
+import com.taller.gestion.caja.repository.SesionCajaRepository;
 import com.taller.gestion.catalogo.entity.Producto;
 import com.taller.gestion.catalogo.service.ProductoService;
 import com.taller.gestion.clientes.dto.ClienteResponseDTO;
@@ -9,6 +17,7 @@ import com.taller.gestion.clientes.service.ClienteService;
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.OperacionNoPermitidaException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
+import com.taller.gestion.usuario.entity.Usuario;
 import com.taller.gestion.usuario.service.UsuarioService;
 import com.taller.gestion.venta.dto.DetalleVentaCreateDTO;
 import com.taller.gestion.venta.dto.DetalleVentaResponseDTO;
@@ -41,15 +50,21 @@ public class VentaService {
     private final ClienteService clienteService;
     private final ProductoService productoService;
     private final UsuarioService usuarioService;
+    private final SesionCajaRepository sesionCajaRepository;
+    private final MovimientoCajaRepository movimientoCajaRepository;
 
     /** Datos del cliente que necesita el alta, sin importar si vino de la sesión o del body. */
     private record ClienteDeVenta(Long id_cliente, String nombre, TipoCliente tipo) {
     }
 
+    private static final String SIN_CAJA_ABIERTA =
+            "No hay una sesión de caja abierta. Abra la caja antes de confirmar una venta";
+
     /**
-     * Arma y confirma la venta en un solo paso. El precio no se recibe: se resuelve desde la
-     * lista del tipo de cliente, con fallback al precio de catálogo mientras no haya filas.
-     * No se descuenta stock: esa responsabilidad queda para VEN-10, cuando exista el módulo.
+     * Arma y confirma la venta en un solo paso, junto con un ingreso de caja por cada pago.
+     * El precio no se recibe: se resuelve desde la lista del tipo de cliente, con fallback al
+     * precio de catálogo mientras no haya filas. No se descuenta stock: esa responsabilidad
+     * queda para VEN-10, cuando exista el módulo.
      */
     @Transactional
     public VentaResponseDTO crearVenta(VentaCreateDTO dto) {
@@ -57,13 +72,18 @@ public class VentaService {
             throw new DatosInvalidosException("La venta debe tener al menos un producto");
         }
         validarDetalles(dto.detalles());
+        if (dto.pagos() == null || dto.pagos().isEmpty()) {
+            throw new DatosInvalidosException("La venta debe tener al menos un pago");
+        }
+        validarPagos(dto.pagos());
 
+        SesionCaja sesion = obtenerSesionAbierta();
         ClienteDeVenta cliente = resolveCliente(dto.id_cliente());
-        Long id_vendedor = usuarioService.obtenerAutenticado().getId_usuario();
+        Usuario vendedor = usuarioService.obtenerAutenticado();
 
         Venta venta = new Venta();
         venta.setId_cliente(cliente.id_cliente());
-        venta.setId_vendedor(id_vendedor);
+        venta.setId_vendedor(vendedor.getId_usuario());
         venta.setFecha(LocalDate.now());
         venta.setHora(LocalTime.now());
         venta.setEstado(EstadoVenta.CONFIRMADA);
@@ -85,7 +105,21 @@ public class VentaService {
         }
         venta.setTotal(total.setScale(2, RoundingMode.HALF_UP));
 
-        return mapearAResponse(ventaRepository.save(venta));
+        BigDecimal totalPagos = dto.pagos().stream()
+                .map(CobroVentaDTO::monto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+        if (totalPagos.compareTo(venta.getTotal()) != 0) {
+            throw new DatosInvalidosException(
+                    "La suma de los pagos ($" + totalPagos.toPlainString()
+                            + ") debe igualar el total de la venta ($"
+                            + venta.getTotal().toPlainString() + ")");
+        }
+
+        Venta guardada = ventaRepository.save(venta);
+        registrarPagos(sesion, vendedor, guardada, dto.pagos());
+
+        return mapearAResponse(guardada);
     }
 
     @Transactional(readOnly = true)
@@ -119,6 +153,53 @@ public class VentaService {
             if (item.cantidad() == null || item.cantidad().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new DatosInvalidosException("La cantidad debe ser mayor a cero");
             }
+        }
+    }
+
+    private void validarPagos(List<CobroVentaDTO> pagos) {
+        for (CobroVentaDTO pago : pagos) {
+            if (pago == null || pago.medioPago() == null) {
+                throw new DatosInvalidosException("El medio de pago es obligatorio");
+            }
+            if (pago.monto() == null || pago.monto().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new DatosInvalidosException("El monto del pago debe ser mayor a cero");
+            }
+            if (pago.monto().scale() > 2) {
+                throw new DatosInvalidosException("El monto del pago admite hasta 2 decimales");
+            }
+        }
+    }
+
+    /** Bloquea la sesión para que no se cierre mientras se registran los cobros. */
+    private SesionCaja obtenerSesionAbierta() {
+        Long id_sesion = sesionCajaRepository
+                .findFirstByEstadoOrderByFechaAperturaDescHoraAperturaDesc(EstadoSesionCaja.ABIERTA)
+                .map(SesionCaja::getId_sesion)
+                .orElseThrow(() -> new OperacionNoPermitidaException(SIN_CAJA_ABIERTA));
+
+        SesionCaja sesion = sesionCajaRepository.findByIdForUpdate(id_sesion)
+                .orElseThrow(() -> new OperacionNoPermitidaException(SIN_CAJA_ABIERTA));
+        if (sesion.getEstado() != EstadoSesionCaja.ABIERTA) {
+            throw new OperacionNoPermitidaException("La sesión de caja ya no está abierta");
+        }
+        return sesion;
+    }
+
+    private void registrarPagos(SesionCaja sesion, Usuario vendedor, Venta venta,
+                                List<CobroVentaDTO> pagos) {
+        for (CobroVentaDTO pago : pagos) {
+            MovimientoCaja movimiento = new MovimientoCaja();
+            movimiento.setSesionCaja(sesion);
+            movimiento.setUsuario(vendedor);
+            movimiento.setId_venta(venta.getId_venta());
+            movimiento.setTipo(TipoMovimientoCaja.INGRESO);
+            movimiento.setConcepto(ConceptoMovimientoCaja.VENTA);
+            movimiento.setMonto(pago.monto().setScale(2, RoundingMode.HALF_UP));
+            movimiento.setMedioPago(pago.medioPago());
+            movimiento.setFecha(venta.getFecha());
+            movimiento.setHora(venta.getHora());
+            movimiento.setObservaciones("Cobro de la venta #" + venta.getId_venta());
+            movimientoCajaRepository.save(movimiento);
         }
     }
 
@@ -159,6 +240,13 @@ public class VentaService {
                         d.getPrecioHistorico(),
                         d.getSubtotal()))
                 .toList();
+        List<CobroVentaDTO> pagos = venta.getId_venta() == null
+                ? List.of()
+                : movimientoCajaRepository
+                        .listarPorVentaYTipo(venta.getId_venta(), TipoMovimientoCaja.INGRESO)
+                        .stream()
+                        .map(m -> new CobroVentaDTO(m.getMedioPago(), m.getMonto()))
+                        .toList();
         return new VentaResponseDTO(
                 venta.getId_venta(),
                 venta.getId_cliente(),
@@ -169,7 +257,8 @@ public class VentaService {
                 venta.getTotal(),
                 venta.getEstado(),
                 venta.getFechaVencimiento(),
-                detalles);
+                detalles,
+                pagos);
     }
 
     /**

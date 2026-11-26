@@ -29,20 +29,23 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 @Tag(name = "Ventas", description = "Alta, consulta y anulación de ventas. La venta se confirma "
         + "al cargarla: no existe estado pendiente. El vendedor se toma de la sesión y el precio "
-        + "de la lista del tipo de cliente. No se descuenta stock ni se generan comprobantes.")
+        + "de la lista del tipo de cliente. Requiere caja abierta: cada pago genera un ingreso "
+        + "en la sesión. No se descuenta stock ni se generan comprobantes.")
 public class VentaController {
 
     private final VentaService ventaService;
 
     @PostMapping
     @Operation(summary = "Confirmar una venta", description = "Arma y confirma la venta en un solo "
-            + "paso. Si no se manda id_cliente se usa el genérico 'Consumidor final'.")
+            + "paso. Si no se manda id_cliente se usa el genérico 'Consumidor final'. Requiere "
+            + "una sesión de caja ABIERTA y pagos cuya suma iguale el total calculado; cada pago "
+            + "se registra como un movimiento INGRESO/VENTA en la misma transacción.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Venta confirmada",
                     content = @Content(schema = @Schema(implementation = VentaResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o pagos que no suman el total"),
             @ApiResponse(responseCode = "404", description = "Cliente o producto no encontrado"),
-            @ApiResponse(responseCode = "409", description = "Cliente inactivo")
+            @ApiResponse(responseCode = "409", description = "Cliente inactivo o caja cerrada")
     })
     public ResponseEntity<VentaResponseDTO> crear(@Valid @RequestBody VentaCreateDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ventaService.crearVenta(dto));

@@ -90,11 +90,32 @@ Los recursos dependientes se exponen anidados: `/api/catalogo/productos/{id_prod
 |---|---|
 | POST | `/api/incidencias` |
 
+### Caja
+
+| Método | Ruta | Rol |
+|---|---|---|
+| GET | `/api/caja/actual` | autenticado |
+| POST | `/api/caja/sesiones` | autenticado |
+| POST | `/api/caja/sesiones/{id_sesion}/movimientos` | autenticado |
+| POST | `/api/caja/sesiones/{id_sesion}/cierre` | autenticado |
+| GET | `/api/caja/sesiones` | autenticado |
+| GET | `/api/caja/sesiones/{id_sesion}` | autenticado |
+| POST | `/api/caja/sesiones/{id_sesion}/revision` | `ADMINISTRADOR` |
+
+Hay una sola caja compartida. La apertura toma un advisory lock transaccional de PostgreSQL
+(`pg_advisory_xact_lock(7401)`) y verifica que no exista otra sesión `ABIERTA`; el cierre y la
+revisión bloquean la fila con `PESSIMISTIC_WRITE`. La sesión `PENDIENTE_REVISION` ya no admite
+movimientos y no impide abrir la siguiente. Los vendedores pueden abrir, egresar, cerrar y
+consultar; solo el administrador revisa diferencias. No hay migraciones Flyway en esta fase:
+el esquema se mantiene con `ddl-auto=update`.
+
 ## Frontend
 
 - `src/services/` contiene el cliente HTTP y un servicio por módulo.
 - `src/pages/` contiene una pantalla por módulo.
-- Las pantallas de catálogo y proveedores consumen la API real.
+- Las pantallas de catálogo, proveedores, ventas, costos y caja consumen la API real.
+- Caja tiene `/caja` (sesión abierta o apertura), `/caja/historial` (filtros y detalle) y
+  `/caja/revision` (solo administradores).
 - El proxy de Vite evita CORS en desarrollo. Para producción o Tomcat externo habrá que configurar CORS en el módulo `common`.
 
 ## CI
@@ -117,4 +138,8 @@ cd frontend && npm run lint && npm run build
 - Módulo `common`: manejo global de excepciones, formato único de error y configuración de CORS.
 - Módulo `usuarios`: login, roles y permisos.
 - Migraciones Flyway (las dependencias ya están en el `pom.xml`, pero todavía no hay migraciones).
-- Módulos de negocio restantes: stock, clientes, ventas, pedidos, caja, costos, auditoría y reportes.
+- Caja Fase 2: el cobro de ventas con medios de pago ya está integrado en `VentaService`
+  (CAJA-02); falta la anulación con contramovimiento (CAJA-07), que requiere el módulo de stock.
+- Caja Fase 3: corrección de cierres con auditoría (CAJA-08).
+- Vínculo entre egresos de caja y costos (CST-05).
+- Módulos de negocio restantes: stock, pedidos, auditoría y reportes.

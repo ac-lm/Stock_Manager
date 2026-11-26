@@ -5,6 +5,9 @@ import { AuthProvider } from './context/AuthProvider'
 import { useAuth } from './context/auth-context'
 import ClientesPage from './pages/ClientesPage'
 import CostosPage from './pages/CostosPage'
+import CajaPage from './pages/CajaPage'
+import CajaHistorialPage from './pages/CajaHistorialPage'
+import CajaRevisionPage from './pages/CajaRevisionPage'
 import InsumosPage from './pages/InsumosPage'
 import LoginPage from './pages/LoginPage'
 import ProductosPage from './pages/ProductosPage'
@@ -33,7 +36,10 @@ function AppShell() {
             <Route path="/proveedores" element={<ProveedoresPage />} />
             <Route path="/clientes" element={<ClientesPage />} />
             <Route path="/ventas" element={<VentasPage />} />
+            <Route path="/caja" element={<CajaPage />} />
+            <Route path="/caja/historial" element={<CajaHistorialPage />} />
             <Route element={<RutaProtegida soloAdmin />}>
+              <Route path="/caja/revision" element={<CajaRevisionPage />} />
               <Route path="/costos" element={<CostosPage />} />
               <Route path="/usuarios" element={<UsuariosPage />} />
             </Route>

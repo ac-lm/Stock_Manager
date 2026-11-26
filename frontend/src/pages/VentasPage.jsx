@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import Modal from '../components/Modal'
+import { cajaService } from '../services/cajaService'
 import { clientesService } from '../services/clientesService'
 import { productosService } from '../services/catalogoService'
 import { ventasService } from '../services/ventasService'
+import { MEDIOS_PAGO, etiquetaMedio } from '../utils/caja'
 import { formatoNumero } from '../utils/format'
 
 const TAMANIO_PAGINA = 10
@@ -12,10 +14,13 @@ const ESTADOS = [
   { value: 'ANULADA', label: 'Anulada' },
 ]
 
+const pagoVacio = () => ({ medioPago: 'EFECTIVO', monto: '' })
+
 const formVacio = () => ({
   id_cliente: '',
   fechaVencimiento: '',
   detalles: [{ id_producto_fk: '', cantidad: '' }],
+  pagos: [pagoVacio()],
 })
 
 const etiquetaEstado = (estado) =>
@@ -51,6 +56,10 @@ function VentasPage() {
   const [clientes, setClientes] = useState([])
   const [productos, setProductos] = useState([])
   const [errorCatalogos, setErrorCatalogos] = useState(null)
+
+  // Caja: undefined mientras carga, null si no hay sesión abierta.
+  const [caja, setCaja] = useState(undefined)
+  const [errorCaja, setErrorCaja] = useState(null)
 
   // Modales
   const [modal, setModal] = useState(null)
@@ -98,9 +107,10 @@ function VentasPage() {
     let cancelado = false
 
     const cargarCatalogos = async () => {
-      const [clientesRes, productosRes] = await Promise.allSettled([
+      const [clientesRes, productosRes, cajaRes] = await Promise.allSettled([
         clientesService.listar({ size: 100 }),
         productosService.listar(),
+        cajaService.actual(),
       ])
 
       if (cancelado) return
@@ -116,6 +126,13 @@ function VentasPage() {
       } else {
         setErrorCatalogos(`No se pudieron cargar los productos: ${productosRes.reason.message}`)
       }
+
+      if (cajaRes.status === 'fulfilled') {
+        setCaja(cajaRes.value)
+      } else {
+        setCaja(null)
+        setErrorCaja(`No se pudo consultar el estado de la caja: ${cajaRes.reason.message}`)
+      }
     }
 
     cargarCatalogos()
@@ -127,6 +144,8 @@ function VentasPage() {
   const clientesParaVender = clientes.filter(
     (cliente) => cliente.activo && cliente.tipoCliente !== 'GENERICO',
   )
+
+  const hayCajaAbierta = caja?.sesion?.estado === 'ABIERTA'
 
   const cambiarFiltro = (setter) => (event) => {
     setter(event.target.value)
@@ -197,6 +216,26 @@ function VentasPage() {
     }))
   }
 
+  const cambiarPago = (index, campo) => (event) => {
+    setForm((prev) => ({
+      ...prev,
+      pagos: prev.pagos.map((pago, i) =>
+        i === index ? { ...pago, [campo]: event.target.value } : pago,
+      ),
+    }))
+  }
+
+  const agregarPago = () => {
+    setForm((prev) => ({ ...prev, pagos: [...prev.pagos, pagoVacio()] }))
+  }
+
+  const quitarPago = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      pagos: prev.pagos.filter((_, i) => i !== index),
+    }))
+  }
+
   const productoDe = (id_producto_fk) =>
     productos.find((producto) => producto.id_producto === Number(id_producto_fk))
 
@@ -211,8 +250,17 @@ function VentasPage() {
     0,
   )
 
+  const totalPagado = form.pagos.reduce(
+    (total, pago) => total + Number(pago.monto || 0),
+    0,
+  )
+
   const guardar = async (event) => {
     event.preventDefault()
+    if (!hayCajaAbierta) {
+      setErrorForm('No hay una sesión de caja abierta. Abra la caja antes de confirmar la venta.')
+      return
+    }
     setGuardando(true)
     setErrorForm(null)
 
@@ -222,6 +270,10 @@ function VentasPage() {
       detalles: form.detalles.map((detalle) => ({
         id_producto_fk: Number(detalle.id_producto_fk),
         cantidad: Number(detalle.cantidad),
+      })),
+      pagos: form.pagos.map((pago) => ({
+        medioPago: pago.medioPago,
+        monto: Number(pago.monto),
       })),
     }
 
@@ -272,6 +324,12 @@ function VentasPage() {
 
       {error && <div className="banner banner-error">{error}</div>}
       {errorCatalogos && <div className="banner banner-error">{errorCatalogos}</div>}
+      {errorCaja && <div className="banner banner-error">{errorCaja}</div>}
+      {caja !== undefined && !hayCajaAbierta && !errorCaja && (
+        <div className="banner banner-error">
+          No hay una sesión de caja abierta. Abra la caja en el módulo Caja para poder vender.
+        </div>
+      )}
       {mensaje && <div className="banner banner-success">{mensaje}</div>}
 
       <div className="toolbar">
@@ -403,10 +461,15 @@ function VentasPage() {
       {modal === 'crear' && (
         <Modal
           title="Nueva venta"
-          subtitle="Se confirma al guardar. El precio se toma de la lista del tipo de cliente."
+          subtitle={`Se confirma al guardar. Caja ${caja?.sesion ? `sesión #${caja.sesion.id_sesion}` : 'sin abrir'}. El precio se toma de la lista del tipo de cliente.`}
           onClose={cerrarModal}
         >
           {errorForm && <div className="banner banner-error">{errorForm}</div>}
+          {!hayCajaAbierta && (
+            <div className="aviso">
+              No hay caja abierta: abra una sesión en el módulo Caja antes de confirmar.
+            </div>
+          )}
 
           <form className="form" onSubmit={guardar}>
             <div className="form-row">
@@ -510,15 +573,89 @@ function VentasPage() {
               <small>Usa precios de catálogo; el servidor aplica la lista del cliente.</small>
             </div>
 
+            <div className="seccion-header">
+              <h3>Pagos</h3>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={agregarPago}>
+                Agregar pago
+              </button>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="table table-compact">
+                <thead>
+                  <tr>
+                    <th>Medio</th>
+                    <th>Monto</th>
+                    <th className="table-actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {form.pagos.map((pago, index) => (
+                    <tr key={index}>
+                      <td>
+                        <select
+                          required
+                          value={pago.medioPago}
+                          onChange={cambiarPago(index, 'medioPago')}
+                        >
+                          {MEDIOS_PAGO.map((opcion) => (
+                            <option key={opcion.value} value={opcion.value}>
+                              {opcion.label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          required
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={pago.monto}
+                          onChange={cambiarPago(index, 'monto')}
+                          placeholder="0.00"
+                        />
+                      </td>
+                      <td className="table-actions">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          disabled={form.pagos.length === 1}
+                          onClick={() => quitarPago(index)}
+                          aria-label="Quitar pago"
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="total-filtro">
+              <span>Total pagado:</span>
+              <strong>${formatoNumero(totalPagado)}</strong>
+              <small>
+                Diferencia con el estimado: ${formatoNumero(totalPagado - totalEstimado)}. El
+                servidor exige que los pagos sumen el total final.
+              </small>
+            </div>
+
             <div className="aviso">
-              El vendedor se toma de la sesión. No se descuenta stock ni se genera comprobante.
+              Cada pago genera un ingreso en la caja abierta. El vendedor se toma de la sesión.
+              No se descuenta stock ni se genera comprobante.
             </div>
 
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" onClick={cerrarModal}>
                 Cancelar
               </button>
-              <button type="submit" className="btn btn-primary" disabled={guardando}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={guardando || !hayCajaAbierta}
+              >
                 {guardando ? 'Guardando...' : 'Confirmar venta'}
               </button>
             </div>
@@ -584,6 +721,36 @@ function VentasPage() {
                         <td className="mono">${formatoNumero(detalle.subtotal)}</td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="seccion-header">
+                <h3>Pagos registrados en caja</h3>
+              </div>
+
+              <div className="table-wrapper">
+                <table className="table table-compact">
+                  <thead>
+                    <tr>
+                      <th>Medio</th>
+                      <th>Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(seleccionada.pagos ?? []).map((pago, index) => (
+                      <tr key={index}>
+                        <td>{etiquetaMedio(pago.medioPago)}</td>
+                        <td className="mono">${formatoNumero(pago.monto)}</td>
+                      </tr>
+                    ))}
+                    {(!seleccionada.pagos || seleccionada.pagos.length === 0) && (
+                      <tr>
+                        <td colSpan="2" className="empty-state">
+                          Sin pagos registrados.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

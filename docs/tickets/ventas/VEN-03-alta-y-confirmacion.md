@@ -15,6 +15,8 @@ quede confirmada al guardar.
 - `POST /api/ventas`.
 - DTOs `VentaCreateDTO`, `DetalleVentaCreateDTO` y de respuesta.
 - Resolución de cliente, vendedor, precios y totales en `VentaService`.
+- Con CAJA-02, el alta exige caja abierta y pagos que sumen el total; ver
+  [`CAJA-02`](../caja/backlog.md#caja-02-cobrar-una-venta-con-uno-o-varios-medios-de-pago).
 
 ## Criterios de aceptación
 
@@ -27,6 +29,8 @@ quede confirmada al guardar.
 - [x] Subtotal y total calculados en backend con `BigDecimal`.
 - [x] `fecha_vencimiento` opcional (saldo con seña, `VEN-09`).
 - [x] No se descuenta stock y no se generan comprobantes.
+- [x] Requiere sesión de caja `ABIERTA` y pagos cuya suma iguale el total (CAJA-02).
+- [x] Cada pago genera un movimiento `INGRESO`/`VENTA` en la misma transacción (CAJA-02).
 - [x] Queda `CONFIRMADA`.
 
 ## Endpoints

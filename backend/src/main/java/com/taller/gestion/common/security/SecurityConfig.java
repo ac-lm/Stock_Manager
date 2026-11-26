@@ -2,6 +2,7 @@ package com.taller.gestion.common.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -64,6 +65,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").authenticated()
                         .requestMatchers("/api/usuarios/**", "/api/costos/**", "/api/tipos-costo/**")
                         .hasRole("ADMINISTRADOR")
+                        // Revisar una sesión con diferencia es la única operación de caja
+                        // reservada al administrador.
+                        .requestMatchers(HttpMethod.POST, "/api/caja/sesiones/*/revision")
+                        .hasRole("ADMINISTRADOR")
+                        .requestMatchers("/api/caja/**").authenticated()
                         // Swagger queda público para consultar y probar la API.
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**",
                                 "/v3/api-docs/**").permitAll()

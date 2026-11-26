@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taller.gestion.common.security.ErrorResponseWriter;
 import com.taller.gestion.common.security.RestAccessDeniedHandler;
 import com.taller.gestion.common.security.RestAuthenticationEntryPoint;
+import com.taller.gestion.caja.dto.CobroVentaDTO;
+import com.taller.gestion.caja.entity.MedioPago;
 import com.taller.gestion.common.security.SecurityConfig;
 import com.taller.gestion.venta.dto.DetalleVentaCreateDTO;
 import com.taller.gestion.venta.dto.VentaCreateDTO;
@@ -53,12 +55,18 @@ class VentaControllerTest {
 
     private VentaResponseDTO respuesta() {
         return new VentaResponseDTO(1L, 1L, "Consumidor final", 5L, null, null,
-                new BigDecimal("250.00"), EstadoVenta.CONFIRMADA, null, List.of());
+                new BigDecimal("250.00"), EstadoVenta.CONFIRMADA, null, List.of(),
+                List.of(new CobroVentaDTO(MedioPago.EFECTIVO, new BigDecimal("250.00"))));
     }
 
     private String bodyValido() throws Exception {
+        return bodyConPagos(List.of(new CobroVentaDTO(
+                MedioPago.EFECTIVO, new BigDecimal("250.00"))));
+    }
+
+    private String bodyConPagos(List<CobroVentaDTO> pagos) throws Exception {
         return objectMapper.writeValueAsString(new VentaCreateDTO(null, null,
-                List.of(new DetalleVentaCreateDTO(10L, new BigDecimal("2.500")))));
+                List.of(new DetalleVentaCreateDTO(10L, new BigDecimal("2.500"))), pagos));
     }
 
     @Test
@@ -72,17 +80,39 @@ class VentaControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id_venta").value(1))
                 .andExpect(jsonPath("$.estado").value("CONFIRMADA"))
-                .andExpect(jsonPath("$.total").value(250.00));
+                .andExpect(jsonPath("$.total").value(250.00))
+                .andExpect(jsonPath("$.pagos[0].medioPago").value("EFECTIVO"))
+                .andExpect(jsonPath("$.pagos[0].monto").value(250.00));
     }
 
     @Test
     @DisplayName("POST /api/ventas sin productos: 400 por validación")
     void crear_sinProductos_devuelve400() throws Exception {
-        String body = objectMapper.writeValueAsString(new VentaCreateDTO(null, null, List.of()));
+        String body = objectMapper.writeValueAsString(new VentaCreateDTO(null, null, List.of(),
+                List.of(new CobroVentaDTO(MedioPago.EFECTIVO, new BigDecimal("250.00")))));
 
         mockMvc.perform(post("/api/ventas")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/ventas sin pagos: 400 por validación")
+    void crear_sinPagos_devuelve400() throws Exception {
+        mockMvc.perform(post("/api/ventas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyConPagos(List.of())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("POST /api/ventas con pago de monto cero: 400 por validación")
+    void crear_pagoCero_devuelve400() throws Exception {
+        mockMvc.perform(post("/api/ventas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyConPagos(List.of(new CobroVentaDTO(
+                                MedioPago.TRANSFERENCIA, BigDecimal.ZERO)))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -111,7 +141,8 @@ class VentaControllerTest {
     @DisplayName("PUT /api/ventas/{id}/anular: anula la venta")
     void anular() throws Exception {
         VentaResponseDTO anulada = new VentaResponseDTO(1L, 1L, "Consumidor final", 5L,
-                null, null, new BigDecimal("250.00"), EstadoVenta.ANULADA, null, List.of());
+                null, null, new BigDecimal("250.00"), EstadoVenta.ANULADA, null, List.of(),
+                List.of(new CobroVentaDTO(MedioPago.EFECTIVO, new BigDecimal("250.00"))));
         when(ventaService.anularVenta(1L)).thenReturn(anulada);
 
         mockMvc.perform(put("/api/ventas/1/anular"))

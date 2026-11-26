@@ -8,9 +8,11 @@ const LINKS = [
   { to: '/proveedores', label: 'Proveedores' },
   { to: '/clientes', label: 'Clientes' },
   { to: '/ventas', label: 'Ventas' },
+  { to: '/caja', label: 'Caja' },
 ]
 
 const LINKS_ADMIN = [
+  { to: '/caja/revision', label: 'Revisión de caja' },
   { to: '/costos', label: 'Costos' },
   { to: '/usuarios', label: 'Usuarios' },
 ]

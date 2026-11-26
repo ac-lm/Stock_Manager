@@ -105,42 +105,150 @@ Qué insumos provee cada proveedor.
 | Columna | Tipo | Restricciones |
 |---|---|---|
 | `id_usuario` | `bigint` | PK, autoincremental |
-| `nombre` | `varchar(255)` | nullable (sin `@Column` explícito) |
-| `email` | `varchar(255)` | nullable |
-| `password` | `varchar(255)` | nullable |
-| `rol` | según enum `Rol` | `ADMINISTRADOR`, `VENDEDOR` |
+| `nombre` | `varchar(100)` | not null |
+| `email` | `varchar(255)` | not null, **unique**; se usa como nombre de usuario |
+| `password` | `varchar(255)` | not null; se guarda con BCrypt |
+| `rol` | `varchar(20)` | not null; `ADMINISTRADOR`, `VENDEDOR` |
+| `activo` | `boolean` | not null, default `true` |
 
-Estructura inicial: todavía no hay login, seguridad ni validaciones. El enum `Rol` no tiene
-`@Enumerated`, por lo que Hibernate lo persiste como ordinal; revisar al implementar el módulo.
+La baja es lógica para no perder el historial de ventas, movimientos y auditoría. El login usa
+sesión HTTP con cookie `HttpOnly`; la sesión se valida contra la base en cada request.
+
+### `Cliente` (módulo `clientes`)
+
+| Columna | Tipo | Restricciones |
+|---|---|---|
+| `id_cliente` | `bigint` | PK, autoincremental |
+| `CUIT` | `varchar(13)` | nullable, **unique**; nulo solo para consumidor final |
+| `nombre` | `varchar(50)` | not null |
+| `telefono` | `varchar(30)` | nullable |
+| `email` | `varchar(150)` | not null |
+| `direccion` | `varchar(80)` | not null |
+| `tipo_cliente` | `varchar(20)` | not null; enum `TipoCliente` |
+| `observaciones` | `varchar(250)` | nullable |
+| `activo` | `boolean` | not null, default `true` |
+| `plazo_pago_dias` | `integer` | nullable |
+| `nombre_normalizado` | `varchar(50)` | not null; se recalcula en cada alta/edición |
+
+La baja es lógica (`activo`). El cliente genérico de consumidor final se crea al arrancar y no
+se puede modificar ni desactivar.
 
 ### `Venta` (módulo `venta`)
 
 | Columna | Tipo | Restricciones |
 |---|---|---|
 | `id_venta` | `bigint` | PK, autoincremental |
-| `id_cliente` | `bigint` | sin FK en el código actual |
-| `fecha` | `date` | — |
-| `hora` | `time` | — |
-| `total` | `double precision` | — |
-| `id_vendedor` | `bigint` | sin FK en el código actual |
-| `estado` | `varchar(255)` | — |
-| `descuento` | `double precision` | — |
+| `id_cliente` | `bigint` | not null; FK validada por `ClienteService` |
+| `id_vendedor` | `bigint` | not null; usuario autenticado |
+| `fecha` | `date` | not null |
+| `hora` | `time` | not null |
+| `total` | `numeric(12,2)` | not null |
+| `estado` | `varchar(20)` | not null; `CONFIRMADA`, `ANULADA` |
+| `fecha_vencimiento` | `date` | nullable; se usa cuando la venta viene de un pedido |
 
-Es una primera versión; falta modelar las relaciones con `Cliente` y `Usuario`.
+Los renglones viven en `Detalle_Venta` con `@OneToMany` y `orphanRemoval`. Al confirmar la venta
+se exige una sesión `Sesion_Caja` `ABIERTA` y se crea un `Movimiento_Caja` `INGRESO`/`VENTA` por
+cada pago, con `id_venta`; venta y movimientos se guardan en la misma transacción. No existe
+`Venta.medio_pago` ni una tabla de pagos: los pagos se consultan desde `Movimiento_Caja` por
+`id_venta` y se exponen en `VentaResponseDTO.pagos`. La anulación con contramovimientos queda
+para CAJA-07.
+
+### `Costo` (módulo `costos`)
+
+| Columna | Tipo | Restricciones |
+|---|---|---|
+| `id_costo` | `bigint` | PK, autoincremental |
+| `id_tipo_costo` | `bigint` | not null, FK → `TipoCosto` |
+| `descripcion` | `varchar(255)` | not null |
+| `monto` | `numeric(12,2)` | not null |
+| `fecha_pago` | `date` | not null |
+| `periodo_mes` | `integer` | not null |
+| `periodo_anio` | `integer` | not null |
+| `id_usuario` | `bigint` | not null, FK → `Usuario` |
+| `id_ingreso_mercaderia` | `bigint` | nullable, **unique**; vínculo con el ingreso que lo generó |
+| `anulado` | `boolean` | not null, default `false` |
+| `motivo_anulacion` | `varchar(255)` | nullable |
+| `id_usuario_anulacion` | `bigint` | nullable, FK → `Usuario` |
+| `fecha_anulacion` | `timestamp` | nullable |
+| `observaciones` | `varchar(255)` | nullable |
+
+La baja es lógica (`anulado`). El vínculo entre un egreso de caja y un costo
+(`Movimiento_Caja.id_costo`) queda para CST-05.
+
+### `Sesion_Caja` (módulo `caja`)
+
+Una sesión de caja es el período entre una apertura y su cierre. Nunca hay dos sesiones
+`ABIERTA` al mismo tiempo: la unicidad se protege con `pg_advisory_xact_lock(7401)` dentro de
+la transacción de apertura, no con una constraint de base.
+
+| Columna | Tipo | Restricciones |
+|---|---|---|
+| `id_sesion` | `bigint` | PK, autoincremental |
+| `id_usuario_apertura` | `bigint` | not null, FK → `Usuario` |
+| `id_usuario_cierre` | `bigint` | nullable, FK → `Usuario` |
+| `id_usuario_revision` | `bigint` | nullable, FK → `Usuario` |
+| `fecha_apertura` | `date` | not null |
+| `hora_apertura` | `time` | not null |
+| `fecha_cierre` | `date` | nullable |
+| `hora_cierre` | `time` | nullable |
+| `monto_inicial` | `numeric(12,2)` | not null |
+| `motivo_ajuste_inicial` | `varchar(150)` | nullable; obligatorio si el monto difiere del sugerido |
+| `estado` | `varchar(30)` | `ABIERTA`, `PENDIENTE_REVISION`, `CERRADA` |
+| `total_esperado` | `numeric(12,2)` | nullable hasta cerrar |
+| `total_declarado` | `numeric(12,2)` | nullable hasta cerrar |
+| `diferencia` | `numeric(12,2)` | nullable hasta cerrar; declarado − esperado |
+| `observaciones` | `varchar(100)` | nullable; obligatoria si hay diferencia |
+| `fecha_revision` | `timestamp` | nullable; guarda fecha y hora |
+| `observacion_revision` | `varchar(150)` | nullable |
+
+`PENDIENTE_REVISION` ya no admite movimientos y no bloquea la apertura de la sesión siguiente.
+La revisión solo la puede hacer un administrador y no cambia los montos.
+
+### `Movimiento_Caja` (módulo `caja`)
+
+| Columna | Tipo | Restricciones |
+|---|---|---|
+| `id_movimiento_caja` | `bigint` | PK, autoincremental |
+| `id_sesion_caja` | `bigint` | not null, FK → `Sesion_Caja` |
+| `id_usuario` | `bigint` | not null, FK → `Usuario` |
+| `id_venta` | `bigint` | nullable; se usa en Fase 2 |
+| `id_costo` | `bigint` | nullable; se usa con CST-05 |
+| `tipo` | `varchar(20)` | `INGRESO`, `EGRESO` |
+| `concepto` | `varchar(20)` | `VENTA`, `RETIRO`, `GASTO`, `ANULACION` |
+| `monto` | `numeric(12,2)` | not null, mayor a 0 |
+| `medio_pago` | `varchar(20)` | `EFECTIVO`, `TRANSFERENCIA` |
+| `fecha` | `date` | not null |
+| `hora` | `time` | not null |
+| `observaciones` | `varchar(150)` | nullable |
+
+Los movimientos no se editan ni se borran: una anulación se registra con un contramovimiento.
+En Fase 1 solo se crean egresos `RETIRO`/`GASTO`; los ingresos por venta llegan con CAJA-02.
+
+### `Cierre_Caja_Detalle` (módulo `caja`)
+
+| Columna | Tipo | Restricciones |
+|---|---|---|
+| `id_sesion` | `bigint` | PK, FK → `Sesion_Caja` |
+| `medio_pago` | `varchar(20)` | PK; `EFECTIVO` o `TRANSFERENCIA` |
+| `total_esperado` | `numeric(12,2)` | not null |
+| `total_declarado` | `numeric(12,2)` | not null |
+| `diferencia` | `numeric(12,2)` | not null; declarado − esperado |
+
+La clave es compuesta (`id_sesion`, `medio_pago`). Siempre se crean las dos filas al cerrar,
+aunque algún medio quede en cero. El `total_declarado` de `TRANSFERENCIA` es el neto de la
+sesión (ingresos − egresos) y puede ser negativo; el de `EFECTIVO` no puede ser negativo.
 
 ## Tablas pendientes
 
-El modelo de Vertabelo tiene **22 tablas**. Además de las de arriba, el sistema contempla:
+Además de las documentadas, el modelo de Vertabelo contempla tablas que todavía no están
+implementadas en el backend:
 
-- `Cliente` (con columna `activo` → baja lógica).
-- `Movimiento_Stock`, `Caja`, `Pedido`, `Detalle_Pedido`, `Costo`, `Auditoria` y las tablas
-  restantes del modelo.
+- `Movimiento_Stock`.
+- `Pedido` y `Detalle_Pedido`.
+- `Auditoria`.
+- `Ingreso_Mercaderia` y las tablas restantes del modelo.
 
-
-
-No se documentan columnas de esas tablas hasta contar con el XML completo, para no inventar
-estructura. Cuando se agregue `docs/db/modelo-vertabelo.xml`, esta sección se completa con el
-detalle exacto.
+No se documentan columnas de esas tablas hasta implementarlas, para no inventar estructura.
 
 ## Reglas de borrado
 
@@ -149,5 +257,8 @@ detalle exacto.
 | `Insumo`, `Producto`, `Producto_Insumo` | física | el modelo no define estado |
 | `Proveedor`, `Proveedor_Insumo` | física | el modelo no define estado |
 | `Cliente` | lógica (`activo`) | el modelo sí define estado |
+| `Costo` | lógica (`anulado`) | conserva el historial de gastos |
+| `Movimiento_Caja` | no se borra | trazabilidad de la caja |
+| `Sesion_Caja`, `Cierre_Caja_Detalle` | no se borra | historial de cierres |
 
 Las tablas con baja física eliminan sus dependencias en cascada.

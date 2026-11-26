@@ -15,6 +15,8 @@
 - Pantalla de alta de venta con renglones (producto + cantidad).
 - Selector de cliente con opción "Consumidor final" (id_cliente vacío).
 - Listado con filtros y botón de anulación.
+- Con CAJA-02: pagos mixtos (efectivo/transferencia), aviso y bloqueo sin caja abierta, y pagos
+  registrados en el detalle de la venta.
 
 ## Criterios de aceptación
 
@@ -22,6 +24,9 @@
 - [x] No existe campo de precio ni de descuento.
 - [x] El vendedor no se muestra: sale de la sesión.
 - [x] Anular pide confirmación y avisa que no se revierte stock.
+- [x] El alta deshabilita "Confirmar venta" si no hay caja abierta (CAJA-02).
+- [x] Se pueden cargar varios pagos y se muestra el total pagado (CAJA-02).
+- [x] El detalle muestra los pagos registrados en caja (CAJA-02).
 - [x] `npm run lint` y `npm run build` pasan.
 
 ## Archivos

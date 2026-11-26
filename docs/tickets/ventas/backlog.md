@@ -2,8 +2,9 @@
 
 Tickets del módulo `venta` escritos como rebanadas verticales. Esta primera tanda cubre solo
 **venta + detalle** (aclaración 3 de [`preguntas.md`](preguntas.md)): el alta se confirma en el
-momento, sin descuento de stock, sin pedidos, sin caja y sin comprobantes. Los temas acordados
-pero diferidos quedan como tickets 🔴 con su bloqueante explícito.
+momento, sin descuento de stock, sin pedidos y sin comprobantes. La integración con caja
+(CAJA-02) ya está incluida: exige sesión abierta y registra un ingreso por pago. Los temas
+acordados pero diferidos quedan como tickets 🔴 con su bloqueante explícito.
 
 **Decisiones vigentes de esta tanda:**
 

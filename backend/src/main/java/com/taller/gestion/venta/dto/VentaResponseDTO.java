@@ -1,5 +1,6 @@
 package com.taller.gestion.venta.dto;
 
+import com.taller.gestion.caja.dto.CobroVentaDTO;
 import com.taller.gestion.venta.entity.EstadoVenta;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -8,7 +9,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-@Schema(description = "Venta confirmada o anulada con sus renglones")
+@Schema(description = "Venta confirmada o anulada con sus renglones y los pagos registrados "
+        + "en caja")
 public record VentaResponseDTO(
 
         @Schema(description = "Id de la venta")
@@ -39,6 +41,9 @@ public record VentaResponseDTO(
         LocalDate fechaVencimiento,
 
         @Schema(description = "Renglones de la venta")
-        List<DetalleVentaResponseDTO> detalles
+        List<DetalleVentaResponseDTO> detalles,
+
+        @Schema(description = "Pagos cobrados, tomados de los movimientos de ingreso de caja")
+        List<CobroVentaDTO> pagos
 ) {
 }

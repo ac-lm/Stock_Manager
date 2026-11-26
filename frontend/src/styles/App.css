@@ -629,3 +629,142 @@
     align-items: flex-start;
   }
 }
+
+/* Caja: sesión, totales, estados y movimientos */
+
+.caja-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.caja-estado-sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+}
+
+.caja-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.caja-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.caja-total-titulo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.caja-total-monto {
+  font-size: 1.45rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.caja-total-etiqueta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.caja-total-cierre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.caja-total-cierre .monto-negativo,
+.caja-total-cierre .monto-positivo {
+  font-weight: 600;
+}
+
+.caja-apertura {
+  padding: 1.25rem;
+}
+
+.caja-apertura .seccion-header {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.badge-abierta {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.badge-pendiente {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.badge-cerrada {
+  background: #ecfdf5;
+  color: var(--success);
+}
+
+.monto-negativo {
+  color: var(--danger);
+}
+
+.monto-positivo {
+  color: var(--success);
+}
+
+.field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.field-inline > span {
+  white-space: nowrap;
+}
+
+.field-inline input {
+  padding: 0.45rem 0.55rem;
+}
+
+@media (max-width: 640px) {
+  .caja-acciones {
+    width: 100%;
+  }
+
+  .caja-acciones .btn {
+    flex: 1;
+  }
+
+  .field-inline {
+    width: 100%;
+  }
+
+  .field-inline input {
+    flex: 1;
+  }
+}
