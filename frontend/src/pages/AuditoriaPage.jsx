@@ -18,12 +18,50 @@ const ACCIONES = [
   { value: 'OTRO', label: 'Otro' },
 ]
 
+// Cada acción manual ya sabe a qué registro apunta y si tiene sentidos los "cambios".
+// Así el usuario elige una opción en lenguaje normal, sin escribir nombres de tabla.
+const CONFIG_ACCION = {
+  APERTURA_CAJA: {
+    tabla: 'Sesion_Caja',
+    idLabel: 'Número de la sesión de caja',
+    idPlaceholder: 'Ej. 12',
+    conCambios: false,
+  },
+  CIERRE_CAJA: {
+    tabla: 'Sesion_Caja',
+    idLabel: 'Número de la sesión de caja',
+    idPlaceholder: 'Ej. 12',
+    conCambios: false,
+  },
+  CORRECCION_CAJA: {
+    tabla: 'Sesion_Caja',
+    idLabel: 'Número de la sesión de caja',
+    idPlaceholder: 'Ej. 12',
+    conCambios: false,
+  },
+  ANULACION_VENTA: {
+    tabla: 'Venta',
+    idLabel: 'Número de la venta',
+    idPlaceholder: 'Ej. 87',
+    conCambios: false,
+  },
+  AJUSTE_STOCK: {
+    tabla: 'Insumo',
+    idLabel: 'Número del insumo o producto',
+    idPlaceholder: 'Ej. 5',
+    conCambios: true,
+  },
+  OTRO: {
+    tabla: null,
+    idLabel: 'Número del registro (si aplica)',
+    idPlaceholder: 'Ej. 7',
+    conCambios: true,
+  },
+}
+
 // Las altas, bajas, modificaciones y los logins son automáticos. Las correcciones se
 // hacen desde el botón "Corregir" de cada fila, no desde el formulario general.
-const ACCIONES_MANUALES = ACCIONES.filter((accion) =>
-  !['ALTA', 'MODIFICACION', 'BAJA', 'LOGIN', 'CORRECCION_AUDITORIA'].includes(accion.value),
-)
-
+const ACCIONES_MANUALES = ACCIONES.filter((accion) => CONFIG_ACCION[accion.value])
 const ACCIONES_AUTOMATICAS = ['ALTA', 'MODIFICACION', 'BAJA', 'LOGIN']
 
 const etiquetaAccion = (accion) => ACCIONES.find((item) => item.value === accion)?.label ?? accion
@@ -41,7 +79,6 @@ const crearFilaVacia = () => ({ campo: '', anterior: '', nuevo: '' })
 
 const crearFormVacio = () => ({
   accion: 'OTRO',
-  tabla: '',
   id_registro: '',
   detalle: '',
   cambios: [crearFilaVacia()],
@@ -252,7 +289,6 @@ function AuditoriaPage() {
     setCorregido(registro)
     setForm({
       accion: 'CORRECCION_AUDITORIA',
-      tabla: 'Auditoria',
       id_registro: '',
       detalle: '',
       cambios: filas.length
@@ -265,6 +301,16 @@ function AuditoriaPage() {
     })
     setErrorForm(null)
     setModal('corregir')
+  }
+
+  const cambiarAccion = (event) => {
+    const accion = event.target.value
+    setForm((prev) => ({
+      ...prev,
+      accion,
+      id_registro: '',
+      cambios: [crearFilaVacia()],
+    }))
   }
 
   const cambiarFila = (indice, campo) => (event) => {
@@ -323,7 +369,7 @@ function AuditoriaPage() {
       } else {
         await auditoriaService.crear({
           accion: form.accion,
-          tabla: form.tabla.trim() || null,
+          tabla: CONFIG_ACCION[form.accion]?.tabla ?? null,
           id_registro: form.id_registro === '' ? null : Number(form.id_registro),
           detalle: form.detalle.trim() || null,
           cambios,
@@ -340,6 +386,7 @@ function AuditoriaPage() {
   }
 
   const filasDetalle = seleccionado ? filasDeCambios(seleccionado.cambios) : []
+  const configAccion = CONFIG_ACCION[form.accion]
 
   return (
     <section className="page">
@@ -590,14 +637,14 @@ function AuditoriaPage() {
           onClose={cerrarModal}
         >
           {errorForm && <div className="banner banner-error">{errorForm}</div>}
+          <p className="field-help">
+            Usalo solo para operaciones que el sistema no registra automáticamente. Elegí qué
+            pasó y completá los datos que correspondan.
+          </p>
           <form className="form" onSubmit={guardar}>
             <label className="field">
-              <span>Acción *</span>
-              <select
-                value={form.accion}
-                onChange={(event) => setForm((prev) => ({ ...prev, accion: event.target.value }))}
-                required
-              >
+              <span>¿Qué pasó? *</span>
+              <select value={form.accion} onChange={cambiarAccion} required>
                 {ACCIONES_MANUALES.map((accion) => (
                   <option key={accion.value} value={accion.value}>
                     {accion.label}
@@ -605,45 +652,41 @@ function AuditoriaPage() {
                 ))}
               </select>
             </label>
-            <div className="form-row">
+            {configAccion?.idLabel && (
               <label className="field">
-                <span>Tabla o recurso</span>
-                <input
-                  type="text"
-                  maxLength={50}
-                  value={form.tabla}
-                  onChange={(event) => setForm((prev) => ({ ...prev, tabla: event.target.value }))}
-                />
-              </label>
-              <label className="field">
-                <span>Id registro</span>
+                <span>{configAccion.idLabel}</span>
                 <input
                   type="number"
                   min="1"
+                  placeholder={configAccion.idPlaceholder}
                   value={form.id_registro}
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, id_registro: event.target.value }))
                   }
                 />
               </label>
-            </div>
+            )}
             <label className="field">
-              <span>Detalle</span>
+              <span>Detalle *</span>
               <input
                 type="text"
                 maxLength={255}
+                placeholder="Ej. Cierre con diferencia de $ 50"
                 value={form.detalle}
                 onChange={(event) => setForm((prev) => ({ ...prev, detalle: event.target.value }))}
+                required
               />
             </label>
-            <EditorCambios
-              titulo="Cambios"
-              ayuda="Escribí el campo que cambió, su valor anterior y el valor nuevo. Podés agregar varios."
-              filas={form.cambios}
-              onChange={cambiarFila}
-              onAgregar={agregarFila}
-              onQuitar={quitarFila}
-            />
+            {configAccion?.conCambios && (
+              <EditorCambios
+                titulo="¿Qué cambió?"
+                ayuda="Completá el campo, el valor anterior y el nuevo. Si no hubo cambios, dejalo vacío."
+                filas={form.cambios}
+                onChange={cambiarFila}
+                onAgregar={agregarFila}
+                onQuitar={quitarFila}
+              />
+            )}
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" onClick={cerrarModal}>
                 Cancelar
