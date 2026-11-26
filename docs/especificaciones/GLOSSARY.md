@@ -46,7 +46,7 @@ Una venta cobrada con más de un medio de pago, por ejemplo una parte en efectiv
 Lo que debería haber al cerrar, por cada medio de pago: monto inicial (solo efectivo) más ingresos menos egresos de la sesión.
 
 **Total declarado**
-Lo que la persona que cierra cuenta o verifica, por cada medio de pago. El efectivo se cuenta y no puede ser negativo; las transferencias se controlan contra el banco y se declaran como neto de la sesión (cobros menos pagos), que puede ser negativo si los egresos superan a los ingresos.
+Lo que la persona que cierra cuenta o verifica, por cada medio de pago. El efectivo se cuenta; las transferencias se controlan contra el banco.
 
 **Diferencia**
 Total declarado menos total esperado. Negativa es faltante, positiva es sobrante.
@@ -112,6 +112,41 @@ _Evitar:_ "ingreso" a secas para hablar de mercadería.
 **Salida de mercadería**
 Salida de insumos o productos del stock por un motivo distinto de la venta: descarte, pérdida, daño o ajuste.
 _Evitar:_ "salida" o "egreso" para hablar de dinero.
+
+
+## Reportes
+
+**Reporte**
+Una consulta sobre lo que ya registraron los otros módulos, que se muestra con filtros, una tabla y un gráfico, y se puede exportar. Un reporte nunca cambia datos.
+_Evitar:_ "informe" y "estadística" como cosas distintas; son reportes.
+
+**Período**
+El rango de fechas que abarca un reporte, de una fecha a otra, las dos incluidas.
+
+**Total vendido**
+La suma de lo cobrado en las ventas confirmadas de un período, según la fecha de la venta. Las ventas anuladas no cuentan, aunque se hayan anulado después.
+_No confundir con:_ lo cobrado en caja, que cuenta el dinero en la sesión en que entró o salió. Tampoco con facturación.
+_Evitar:_ "facturación" como sinónimo.
+
+**Facturación**
+El total facturado con factura fiscal. La clienta quiere emitir facturas desde el sistema, pero todavía no está definido cómo; hasta entonces el sistema no tiene facturas.
+_No confundir con:_ Total vendido, ni con Remito.
+
+**Vendedor (en reportes)**
+El usuario que registró la venta.
+
+**Producto más vendido**
+El producto con mayor total vendido en un período. Comparar por cantidad solo tiene sentido entre productos que se venden en la misma unidad.
+
+**Producto bajo mínimo**
+Producto o insumo cuyo stock actual es menor que su stock mínimo.
+
+**Comparación estacional**
+Comparar un mes con el mismo mes de años anteriores, para ver en qué épocas del año se vende más o menos.
+
+**Resultado**
+Total vendido menos costos de un mismo período. Es una cuenta simple para orientarse, no un balance contable.
+_Evitar:_ "ganancia" o "utilidad" como si fuera el resultado contable.
 
 ## Usuarios
 

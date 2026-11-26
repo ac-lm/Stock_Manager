@@ -7,7 +7,7 @@ la corrección de cierres y la auditoría quedan para fases posteriores con su b
 explícito.
 
 **Fuentes de verdad:** [`caja-decisiones.md`](../../caja/caja-decisiones.md),
-[`GLOSSARY.md`](../../caja/GLOSSARY.md), los ADR
+[`GLOSSARY.md`](../../especificaciones/GLOSSARY.md), los ADR
 [`0001`](../../caja/adr/0001-caja-como-sesion-con-movimientos.md) y
 [`0002`](../../caja/adr/0002-anulacion-por-contramovimiento.md), y los tickets CAJA-01 a
 CAJA-09 del PDF del proyecto. El export de Vertabelo está atrasado: no tiene
