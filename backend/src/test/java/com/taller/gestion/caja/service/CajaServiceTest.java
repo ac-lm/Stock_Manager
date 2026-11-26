@@ -249,7 +249,7 @@ class CajaServiceTest {
 
         MovimientoCajaResponseDTO r = cajaService.registrarEgreso(ID_SESION,
                 new MovimientoCajaCreateDTO(ConceptoMovimientoCaja.RETIRO, MedioPago.EFECTIVO,
-                        new BigDecimal("200.00"), "Retiro para depositar"));
+                        new BigDecimal("200.00"), "Retiro para depositar", null));
 
         assertThat(r.id_movimiento_caja()).isEqualTo(10L);
         assertThat(r.id_sesion()).isEqualTo(ID_SESION);
@@ -262,13 +262,35 @@ class CajaServiceTest {
     }
 
     @Test
+    @DisplayName("Egreso vinculado a un costo: guarda y devuelve id_costo (CST-05)")
+    void egreso_conCostoVinculado_guardaIdCosto() {
+        prepararEgresoEfectivo(new BigDecimal("1000.00"));
+        when(usuarioService.obtenerAutenticado())
+                .thenReturn(usuario(5L, "Ana", Rol.VENDEDOR));
+        when(movimientoCajaRepository.save(any(MovimientoCaja.class))).thenAnswer(inv -> {
+            MovimientoCaja m = inv.getArgument(0);
+            m.setId_movimiento_caja(12L);
+            return m;
+        });
+
+        MovimientoCajaResponseDTO r = cajaService.registrarEgreso(ID_SESION,
+                new MovimientoCajaCreateDTO(ConceptoMovimientoCaja.GASTO, MedioPago.EFECTIVO,
+                        new BigDecimal("200.00"), "Pago de alquiler", 10L));
+
+        ArgumentCaptor<MovimientoCaja> captor = ArgumentCaptor.forClass(MovimientoCaja.class);
+        verify(movimientoCajaRepository).save(captor.capture());
+        assertThat(captor.getValue().getId_costo()).isEqualTo(10L);
+        assertThat(r.id_costo()).isEqualTo(10L);
+    }
+
+    @Test
     @DisplayName("Egreso en efectivo mayor al esperado: falla")
     void egreso_efectivoSuperaLimite_falla() {
         prepararEgresoEfectivo(new BigDecimal("1000.00"));
 
         assertThatThrownBy(() -> cajaService.registrarEgreso(ID_SESION,
                 new MovimientoCajaCreateDTO(ConceptoMovimientoCaja.GASTO, MedioPago.EFECTIVO,
-                        new BigDecimal("1000.01"), null)))
+                        new BigDecimal("1000.01"), null, null)))
                 .isInstanceOf(OperacionNoPermitidaException.class)
                 .hasMessageContaining("no puede superar");
         verify(movimientoCajaRepository, never()).save(any());
@@ -289,7 +311,7 @@ class CajaServiceTest {
 
         MovimientoCajaResponseDTO r = cajaService.registrarEgreso(ID_SESION,
                 new MovimientoCajaCreateDTO(ConceptoMovimientoCaja.GASTO, MedioPago.TRANSFERENCIA,
-                        new BigDecimal("5000.00"), "Pago al proveedor"));
+                        new BigDecimal("5000.00"), "Pago al proveedor", null));
 
         assertThat(r.medioPago()).isEqualTo(MedioPago.TRANSFERENCIA);
         assertThat(r.monto()).isEqualByComparingTo("5000.00");
@@ -303,7 +325,7 @@ class CajaServiceTest {
 
         assertThatThrownBy(() -> cajaService.registrarEgreso(ID_SESION,
                 new MovimientoCajaCreateDTO(ConceptoMovimientoCaja.RETIRO, MedioPago.EFECTIVO,
-                        new BigDecimal("10.00"), null)))
+                        new BigDecimal("10.00"), null, null)))
                 .isInstanceOf(OperacionNoPermitidaException.class)
                 .hasMessageContaining("no está abierta");
     }
@@ -316,7 +338,7 @@ class CajaServiceTest {
 
         assertThatThrownBy(() -> cajaService.registrarEgreso(ID_SESION,
                 new MovimientoCajaCreateDTO(ConceptoMovimientoCaja.VENTA, MedioPago.EFECTIVO,
-                        new BigDecimal("10.00"), null)))
+                        new BigDecimal("10.00"), null, null)))
                 .isInstanceOf(DatosInvalidosException.class)
                 .hasMessageContaining("RETIRO o GASTO");
     }

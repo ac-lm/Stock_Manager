@@ -42,4 +42,12 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
             @Param("id_sesion") Long id_sesion,
             @Param("medioPago") MedioPago medioPago,
             @Param("tipo") TipoMovimientoCaja tipo);
+
+    /** El vínculo se guarda en egresos; se consulta por id para CST-05. */
+    @Query("""
+            SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END
+            FROM MovimientoCaja m
+            WHERE m.id_costo = :id_costo
+            """)
+    boolean existePorCosto(@Param("id_costo") Long id_costo);
 }

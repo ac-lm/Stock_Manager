@@ -238,6 +238,23 @@ class CajaRepositoryTest {
     }
 
     @Test
+    @DisplayName("existePorCosto: detecta el egreso vinculado y no otros costos (CST-05)")
+    void existePorCosto() {
+        Usuario ana = usuario("Ana");
+        SesionCaja sesion = sesion(ana, EstadoSesionCaja.ABIERTA,
+                LocalDate.of(2026, 11, 20), LocalTime.of(8, 0));
+
+        MovimientoCaja egreso = movimiento(sesion, ana, TipoMovimientoCaja.EGRESO,
+                ConceptoMovimientoCaja.GASTO, MedioPago.TRANSFERENCIA, "500.00",
+                LocalDate.of(2026, 11, 20), LocalTime.of(11, 0));
+        egreso.setId_costo(10L);
+        movimientoCajaRepository.saveAndFlush(egreso);
+
+        assertThat(movimientoCajaRepository.existePorCosto(10L)).isTrue();
+        assertThat(movimientoCajaRepository.existePorCosto(99L)).isFalse();
+    }
+
+    @Test
     @DisplayName("Lista los movimientos del más nuevo al más viejo")
     void listarMovimientos_descendente() {
         Usuario ana = usuario("Ana");

@@ -106,8 +106,9 @@ Hay una sola caja compartida. La apertura toma un advisory lock transaccional de
 (`pg_advisory_xact_lock(7401)`) y verifica que no exista otra sesión `ABIERTA`; el cierre y la
 revisión bloquean la fila con `PESSIMISTIC_WRITE`. La sesión `PENDIENTE_REVISION` ya no admite
 movimientos y no impide abrir la siguiente. Los vendedores pueden abrir, egresar, cerrar y
-consultar; solo el administrador revisa diferencias. No hay migraciones Flyway en esta fase:
-el esquema se mantiene con `ddl-auto=update`.
+consultar; solo el administrador revisa diferencias. Los egresos pueden referenciar un costo con
+`id_costo` (CST-05); un costo con egreso asociado no se puede anular desde costos. No hay
+migraciones Flyway en esta fase: el esquema se mantiene con `ddl-auto=update`.
 
 ## Frontend
 
@@ -141,5 +142,4 @@ cd frontend && npm run lint && npm run build
 - Caja Fase 2: el cobro de ventas con medios de pago ya está integrado en `VentaService`
   (CAJA-02); falta la anulación con contramovimiento (CAJA-07), que requiere el módulo de stock.
 - Caja Fase 3: corrección de cierres con auditoría (CAJA-08).
-- Vínculo entre egresos de caja y costos (CST-05).
 - Módulos de negocio restantes: stock, pedidos, auditoría y reportes.

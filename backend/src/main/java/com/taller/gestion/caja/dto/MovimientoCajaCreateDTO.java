@@ -10,7 +10,8 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
-@Schema(description = "Egreso de caja. En la Fase 1 el concepto solo puede ser RETIRO o GASTO.")
+@Schema(description = "Egreso de caja. En la Fase 1 el concepto solo puede ser RETIRO o GASTO. "
+        + "Opcionalmente se vincula con un costo registrado (CST-05).")
 public record MovimientoCajaCreateDTO(
 
         @Schema(description = "Motivo del egreso", example = "RETIRO",
@@ -33,6 +34,10 @@ public record MovimientoCajaCreateDTO(
         @Schema(description = "Detalle libre del egreso", example = "Retiro para depositar",
                 nullable = true)
         @Size(max = 150, message = "La observación admite hasta 150 caracteres")
-        String observaciones
+        String observaciones,
+
+        @Schema(description = "Id del costo que se paga con este egreso, si lo hubiere",
+                example = "10", nullable = true)
+        Long id_costo
 ) {
 }
