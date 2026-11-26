@@ -15,6 +15,7 @@ const LINKS_ADMIN = [
   { to: '/caja/revision', label: 'Revisión de caja' },
   { to: '/costos', label: 'Costos' },
   { to: '/usuarios', label: 'Usuarios' },
+  { to: '/auditoria', label: 'Auditoría' },
 ]
 
 const ROLES = {
