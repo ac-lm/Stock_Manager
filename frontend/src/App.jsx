@@ -3,6 +3,7 @@ import Navbar from './components/Navbar'
 import RutaProtegida from './components/RutaProtegida'
 import { AuthProvider } from './context/AuthProvider'
 import { useAuth } from './context/auth-context'
+import AuditoriaPage from './pages/AuditoriaPage'
 import ClientesPage from './pages/ClientesPage'
 import CostosPage from './pages/CostosPage'
 import CajaPage from './pages/CajaPage'
@@ -42,6 +43,7 @@ function AppShell() {
               <Route path="/caja/revision" element={<CajaRevisionPage />} />
               <Route path="/costos" element={<CostosPage />} />
               <Route path="/usuarios" element={<UsuariosPage />} />
+              <Route path="/auditoria" element={<AuditoriaPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/insumos" replace />} />

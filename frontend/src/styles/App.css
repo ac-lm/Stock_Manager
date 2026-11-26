@@ -768,3 +768,141 @@
     flex: 1;
   }
 }
+
+/* Auditoría: cambios legibles en el detalle y en el formulario */
+
+.detalle-lista {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  gap: 0.45rem 1rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+}
+
+.detalle-lista dt {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.detalle-lista dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.auditoria-cambios {
+  margin-top: 1.25rem;
+}
+
+.auditoria-cambios h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.filas-cambios {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fila-cambio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.fila-cambio input {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .fila-cambio {
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .fila-cambio input:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Auditoría: filtros con etiquetas visibles y fecha como rango opcional */
+
+.toolbar-auditoria {
+  align-items: flex-end;
+  padding: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.toolbar-grupo {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.toolbar-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.toolbar-campo input,
+.toolbar-campo select {
+  min-height: 38px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.toolbar-campo input:focus,
+.toolbar-campo select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.toolbar-campo input[type='search'] {
+  min-width: 200px;
+}
+
+.toolbar-campo input[type='number'] {
+  width: 130px;
+}
+
+.toolbar-campo input[type='date'] {
+  min-width: 150px;
+}
+
+.toolbar-nota {
+  width: 100%;
+}
+
+.toolbar-acciones {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .toolbar-acciones {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .toolbar-acciones {
+    width: 100%;
+  }
+
+  .toolbar-acciones .btn {
+    flex: 1;
+  }
+}
