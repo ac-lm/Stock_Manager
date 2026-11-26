@@ -9,7 +9,7 @@ Si cambia una decisión de negocio, se actualiza acá primero y después el
 
 | # | Tema | Decisión | Impacto |
 |---|---|---|---|
-| 1 | Alcance | Opción B de alcance: núcleo de movimientos + ajuste manual + kardex + pantalla, sin integraciones | `VEN-10`, `INC-07`, `CAJA-07` y `CST-06` siguen pendientes |
+| 1 | Alcance | Opción B de alcance: núcleo de movimientos + ajuste manual + kardex + pantalla; después se integró CAJA-07 | `VEN-10`, `INC-07` y `CST-06` siguen pendientes |
 | 2 | Stock negativo | **No se permite.** Toda salida que supere el saldo → `409` y rollback | Se revirtió la decisión 8b de `ventas/preguntas.md`; `VEN-10` quedó actualizado |
 | 3 | Pantallas | `/stock/insumos` y `/stock/productos`, separadas, visibles para ambos roles | Se agregan dos links en la navbar, sin `soloAdmin` |
 | 4 | Usuario | Se toma de `UsuarioService.obtenerAutenticado()`, nunca del body | Igual que caja y costos |
@@ -17,6 +17,7 @@ Si cambia una decisión de negocio, se actualiza acá primero y después el
 | 6 | Saldo inicial | **Opción A confirmada el 26/11/2026:** el alta mantiene el campo y genera un movimiento `INICIAL` a través de `StockService` | El formulario de alta no cambia; queda trazabilidad |
 | 7 | Modelo | La propuesta de columnas de `STOCK-01` se usa mientras no se confirme el XML de Vertabelo | Hay que validarla antes de generar la entidad |
 | 8 | Fecha del movimiento | Un único `fecha_hora timestamp`, sin `fecha`+`hora` separadas | Define la columna, los DTOs y los filtros del kardex |
+| 9 | Devolución al anular (CAJA-07, 26/11/2026) | Se revierten solo las `SALIDA` que tengan `id_venta`; si no hay, no se crea stock | Evita generar mercadería de la nada mientras `VEN-10` no esté implementado |
 
 ## Puntos resueltos y pendientes
 
@@ -43,3 +44,8 @@ Si cambia una decisión de negocio, se actualiza acá primero y después el
    todavía no está en `docs/db/modelo-vertabelo.xml`. `docs/modelo-datos.md` lista
    `Movimiento_Stock` como tabla pendiente, sin columnas. Si aparece el export/PDF se copian los
    nombres exactos; si no, se usa la propuesta de `STOCK-01`.
+
+7. **Anulación de ventas (resuelto el 26/11/2026).** CAJA-07 devuelve stock solo cuando existen
+   `SALIDA` con `id_venta`. Hoy no hay descuento al confirmar (`VEN-10` sigue pendiente), así que
+   anular no crea stock. Cuando se implemente `VEN-10`, sus salidas deben llevar la FK para que
+   la devolución se haga sola.

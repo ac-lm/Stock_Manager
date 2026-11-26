@@ -108,7 +108,8 @@ Todos los endpoints requieren sesión iniciada; el usuario se toma de la sesión
 `PESSIMISTIC_WRITE`, aplica la entrada o salida y guarda el `Movimiento_Stock` en la misma
 transacción. Una salida sin saldo suficiente devuelve `409` y no guarda nada: el stock nunca
 queda negativo. El alta de catálogo con stock genera un movimiento `INICIAL` a través del mismo
-servicio. No hay integraciones con ventas, incidencias, caja ni costos en esta tanda.
+servicio. La anulación de ventas (CAJA-07) revierte las salidas vinculadas a la venta con una
+`ENTRADA`/`DEVOLUCION`; las integraciones con incidencias, caja (cobros) y costos siguen pendientes.
 
 ### Caja
 
@@ -126,8 +127,10 @@ Hay una sola caja compartida. La apertura toma un advisory lock transaccional de
 (`pg_advisory_xact_lock(7401)`) y verifica que no exista otra sesión `ABIERTA`; el cierre y la
 revisión bloquean la fila con `PESSIMISTIC_WRITE`. La sesión `PENDIENTE_REVISION` ya no admite
 movimientos y no impide abrir la siguiente. Los vendedores pueden abrir, egresar, cerrar y
-consultar; solo el administrador revisa diferencias. No hay migraciones Flyway en esta fase:
-el esquema se mantiene con `ddl-auto=update`.
+consultar; solo el administrador revisa diferencias. La anulación de una venta (CAJA-07) crea
+contramovimientos `EGRESO`/`ANULACION` en la sesión abierta actual, con el `id_venta` y el motivo
+en observaciones; el efectivo a devolver no puede superar el disponible. No hay migraciones
+Flyway en esta fase: el esquema se mantiene con `ddl-auto=update`.
 
 ## Frontend
 
@@ -160,11 +163,11 @@ cd frontend && npm run lint && npm run build
 - Módulo `common`: manejo global de excepciones, formato único de error y configuración de CORS.
 - Módulo `usuarios`: login, roles y permisos.
 - Migraciones Flyway (las dependencias ya están en el `pom.xml`, pero todavía no hay migraciones).
-- Caja Fase 2: el cobro de ventas con medios de pago ya está integrado en `VentaService`
-  (CAJA-02); falta la anulación con contramovimiento (CAJA-07), que requiere integrar las ventas
-  con `StockService`.
+- Caja Fase 2: cobro (CAJA-02) y anulación con contramovimientos (CAJA-07) ya integrados en
+  `VentaService`, con devolución condicional de stock a través de `StockService`.
 - Caja Fase 3: corrección de cierres con auditoría (CAJA-08).
 - Vínculo entre egresos de caja y costos (CST-05).
 - Integraciones pendientes de stock: descuento en ventas (`VEN-10`), incidencias (`INC-07`) e
-  ingresos de mercadería (`CST-06`).
+  ingresos de mercadería (`CST-06`). `VEN-10` debe registrar sus `SALIDA` con `id_venta` para que
+  CAJA-07 las revierta automáticamente.
 - Módulos de negocio restantes: pedidos, auditoría y reportes.

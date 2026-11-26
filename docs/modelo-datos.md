@@ -150,8 +150,9 @@ Los renglones viven en `Detalle_Venta` con `@OneToMany` y `orphanRemoval`. Al co
 se exige una sesión `Sesion_Caja` `ABIERTA` y se crea un `Movimiento_Caja` `INGRESO`/`VENTA` por
 cada pago, con `id_venta`; venta y movimientos se guardan en la misma transacción. No existe
 `Venta.medio_pago` ni una tabla de pagos: los pagos se consultan desde `Movimiento_Caja` por
-`id_venta` y se exponen en `VentaResponseDTO.pagos`. La anulación con contramovimientos queda
-para CAJA-07.
+`id_venta` y se exponen en `VentaResponseDTO.pagos`. Al anular (CAJA-07) la venta pasa a
+`ANULADA` sin borrarse, se crea un `EGRESO`/`ANULACION` por cada pago en la sesión abierta actual
+y se guardan las `ENTRADA`/`DEVOLUCION` de stock que correspondan, todo en una transacción.
 
 ### `Costo` (módulo `costos`)
 
@@ -211,7 +212,7 @@ La revisión solo la puede hacer un administrador y no cambia los montos.
 | `id_movimiento_caja` | `bigint` | PK, autoincremental |
 | `id_sesion_caja` | `bigint` | not null, FK → `Sesion_Caja` |
 | `id_usuario` | `bigint` | not null, FK → `Usuario` |
-| `id_venta` | `bigint` | nullable; se usa en Fase 2 |
+| `id_venta` | `bigint` | nullable; ingreso por venta (CAJA-02) y contramovimiento por anulación (CAJA-07) |
 | `id_costo` | `bigint` | nullable; se usa con CST-05 |
 | `tipo` | `varchar(20)` | `INGRESO`, `EGRESO` |
 | `concepto` | `varchar(20)` | `VENTA`, `RETIRO`, `GASTO`, `ANULACION` |
@@ -222,7 +223,9 @@ La revisión solo la puede hacer un administrador y no cambia los montos.
 | `observaciones` | `varchar(150)` | nullable |
 
 Los movimientos no se editan ni se borran: una anulación se registra con un contramovimiento.
-En Fase 1 solo se crean egresos `RETIRO`/`GASTO`; los ingresos por venta llegan con CAJA-02.
+Además de los egresos `RETIRO`/`GASTO` y los ingresos `VENTA` (CAJA-02), CAJA-07 crea egresos
+`ANULACION` en la sesión abierta actual, con el mismo monto y medio del ingreso original y el
+motivo en `observaciones`.
 
 ### `Cierre_Caja_Detalle` (módulo `caja`)
 
@@ -254,7 +257,7 @@ Trazabilidad de entradas y salidas de stock. Cada movimiento afecta **exactament
 | `id_usuario` | `bigint` | FK → `Usuario`, not null |
 | `fecha_hora` | `timestamp` | not null |
 | `observaciones` | `varchar(150)` | nullable |
-| `id_venta` | `bigint` | FK → `Venta`, nullable; reservado para `VEN-10` |
+| `id_venta` | `bigint` | FK → `Venta`, nullable; salidas por venta (`VEN-10`) y devoluciones por anulación (CAJA-07) |
 | `id_ingreso_mercaderia` | `bigint` | nullable; reservado para `CST-06` |
 
 Regla de integridad: exactamente uno de `id_producto` / `id_insumo` debe estar presente. El

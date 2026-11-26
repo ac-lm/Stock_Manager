@@ -15,6 +15,7 @@ import com.taller.gestion.stock.repository.MovimientoStockRepository;
 import com.taller.gestion.usuario.entity.Rol;
 import com.taller.gestion.usuario.entity.Usuario;
 import com.taller.gestion.usuario.service.UsuarioService;
+import com.taller.gestion.venta.entity.Venta;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -196,5 +198,82 @@ class StockServiceTest {
                 BigDecimal.ONE, null))
                 .isInstanceOf(RecursoNoEncontradoException.class);
         verify(movimientoStockRepository, never()).save(any());
+    }
+
+    // ======================= DEVOLUCIÓN POR ANULACIÓN (CAJA-07) =======================
+
+    private Venta venta(Long id) {
+        Venta v = new Venta();
+        v.setId_venta(id);
+        return v;
+    }
+
+    private MovimientoStock salidaDeVenta(Producto producto, Insumo insumo, Venta venta,
+                                          String cantidad) {
+        MovimientoStock m = new MovimientoStock();
+        m.setProducto(producto);
+        m.setInsumo(insumo);
+        m.setVenta(venta);
+        m.setTipo(TipoMovimientoStock.SALIDA);
+        m.setMotivo(MotivoMovimientoStock.AJUSTE);
+        m.setCantidad(new BigDecimal(cantidad));
+        return m;
+    }
+
+    @Test
+    @DisplayName("Devolver una venta con salida: suma el saldo y guarda ENTRADA/DEVOLUCION con id_venta")
+    void devolverStock_conSalida_generaEntrada() {
+        Producto p = producto("8.000");
+        Venta v = venta(3L);
+        when(movimientoStockRepository.listarPorVentaYTipo(3L, TipoMovimientoStock.SALIDA))
+                .thenReturn(List.of(salidaDeVenta(p, null, v, "2.000")));
+        when(usuarioService.obtenerAutenticado()).thenReturn(usuario());
+        when(productoRepository.findByIdParaActualizar(1L)).thenReturn(Optional.of(p));
+        prepararGuardado();
+
+        stockService.devolverStockDeVenta(3L, "  Producto defectuoso  ");
+
+        assertThat(p.getStockActual()).isEqualByComparingTo("10.000");
+        ArgumentCaptor<MovimientoStock> captor = ArgumentCaptor.forClass(MovimientoStock.class);
+        verify(movimientoStockRepository).save(captor.capture());
+        MovimientoStock devolucion = captor.getValue();
+        assertThat(devolucion.getTipo()).isEqualTo(TipoMovimientoStock.ENTRADA);
+        assertThat(devolucion.getMotivo()).isEqualTo(MotivoMovimientoStock.DEVOLUCION);
+        assertThat(devolucion.getCantidad()).isEqualByComparingTo("2.000");
+        assertThat(devolucion.getVenta()).isSameAs(v);
+        assertThat(devolucion.getObservaciones())
+                .isEqualTo("Devolución por anulación de la venta #3: Producto defectuoso");
+    }
+
+    @Test
+    @DisplayName("Devolver una venta sin salidas: no crea stock ni movimientos")
+    void devolverStock_sinSalidas_noGuardaNada() {
+        when(movimientoStockRepository.listarPorVentaYTipo(3L, TipoMovimientoStock.SALIDA))
+                .thenReturn(List.of());
+
+        stockService.devolverStockDeVenta(3L, "Motivo");
+
+        verify(movimientoStockRepository, never()).save(any());
+        verify(usuarioService, never()).obtenerAutenticado();
+    }
+
+    @Test
+    @DisplayName("Devolver una salida de insumo: usa el mismo insumo y cantidad")
+    void devolverStock_salidaDeInsumo() {
+        Insumo i = insumo("5.000");
+        Venta v = venta(3L);
+        when(movimientoStockRepository.listarPorVentaYTipo(3L, TipoMovimientoStock.SALIDA))
+                .thenReturn(List.of(salidaDeVenta(null, i, v, "1.500")));
+        when(usuarioService.obtenerAutenticado()).thenReturn(usuario());
+        when(insumoRepository.findByIdParaActualizar(2L)).thenReturn(Optional.of(i));
+        prepararGuardado();
+
+        stockService.devolverStockDeVenta(3L, "Motivo");
+
+        assertThat(i.getStockActual()).isEqualByComparingTo("6.500");
+        ArgumentCaptor<MovimientoStock> captor = ArgumentCaptor.forClass(MovimientoStock.class);
+        verify(movimientoStockRepository).save(captor.capture());
+        assertThat(captor.getValue().getInsumo()).isSameAs(i);
+        assertThat(captor.getValue().getProducto()).isNull();
     }
 }

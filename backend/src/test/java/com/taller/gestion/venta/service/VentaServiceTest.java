@@ -9,6 +9,7 @@ import com.taller.gestion.caja.entity.SesionCaja;
 import com.taller.gestion.caja.entity.TipoMovimientoCaja;
 import com.taller.gestion.caja.repository.MovimientoCajaRepository;
 import com.taller.gestion.caja.repository.SesionCajaRepository;
+import com.taller.gestion.caja.service.CajaService;
 import com.taller.gestion.catalogo.entity.Producto;
 import com.taller.gestion.catalogo.service.ProductoService;
 import com.taller.gestion.clientes.dto.ClienteResponseDTO;
@@ -18,8 +19,10 @@ import com.taller.gestion.clientes.service.ClienteService;
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.OperacionNoPermitidaException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
+import com.taller.gestion.stock.service.StockService;
 import com.taller.gestion.usuario.entity.Usuario;
 import com.taller.gestion.usuario.service.UsuarioService;
+import com.taller.gestion.venta.dto.AnularVentaDTO;
 import com.taller.gestion.venta.dto.DetalleVentaCreateDTO;
 import com.taller.gestion.venta.dto.VentaCreateDTO;
 import com.taller.gestion.venta.dto.VentaResponseDTO;
@@ -48,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -77,6 +81,10 @@ class VentaServiceTest {
     private SesionCajaRepository sesionCajaRepository;
     @Mock
     private MovimientoCajaRepository movimientoCajaRepository;
+    @Mock
+    private CajaService cajaService;
+    @Mock
+    private StockService stockService;
 
     @InjectMocks
     private VentaService ventaService;
@@ -383,32 +391,85 @@ class VentaServiceTest {
 
     // ======================= CONSULTAS Y ANULACIÓN =======================
 
-    @Test
-    @DisplayName("Anular una confirmada cambia el estado a ANULADA")
-    void anular_confirmada() {
+    private Venta ventaConfirmada() {
         Venta venta = new Venta();
         venta.setId_venta(ID_VENTA);
         venta.setEstado(EstadoVenta.CONFIRMADA);
         venta.setId_cliente(ID_GENERICO);
-        when(ventaRepository.findById(ID_VENTA)).thenReturn(Optional.of(venta));
-        when(ventaRepository.save(venta)).thenReturn(venta);
-
-        VentaResponseDTO r = ventaService.anularVenta(ID_VENTA);
-
-        assertThat(r.estado()).isEqualTo(EstadoVenta.ANULADA);
+        return venta;
     }
 
     @Test
-    @DisplayName("Anular dos veces: no se permite")
+    @DisplayName("Anular una confirmada revierte cobros y stock y cambia el estado")
+    void anular_confirmada() {
+        Venta venta = ventaConfirmada();
+        when(ventaRepository.findById(ID_VENTA)).thenReturn(Optional.of(venta));
+        when(ventaRepository.save(venta)).thenReturn(venta);
+
+        VentaResponseDTO r = ventaService.anularVenta(
+                ID_VENTA, new AnularVentaDTO("  Producto defectuoso  "));
+
+        assertThat(r.estado()).isEqualTo(EstadoVenta.ANULADA);
+        verify(cajaService).anularCobrosDeVenta(ID_VENTA, "Producto defectuoso");
+        verify(stockService).devolverStockDeVenta(ID_VENTA, "Producto defectuoso");
+    }
+
+    @Test
+    @DisplayName("Anular dos veces: no se permite ni se revierte nada")
     void anular_yaAnulada_falla() {
-        Venta venta = new Venta();
-        venta.setId_venta(ID_VENTA);
+        Venta venta = ventaConfirmada();
         venta.setEstado(EstadoVenta.ANULADA);
         when(ventaRepository.findById(ID_VENTA)).thenReturn(Optional.of(venta));
 
-        assertThatThrownBy(() -> ventaService.anularVenta(ID_VENTA))
+        assertThatThrownBy(() -> ventaService.anularVenta(
+                ID_VENTA, new AnularVentaDTO("Motivo")))
                 .isInstanceOf(OperacionNoPermitidaException.class)
                 .hasMessageContaining("ya está anulada");
+        verify(ventaRepository, never()).save(any());
+        verify(cajaService, never()).anularCobrosDeVenta(any(), any());
+        verify(stockService, never()).devolverStockDeVenta(any(), any());
+    }
+
+    @Test
+    @DisplayName("Anular sin motivo: falla antes de tocar caja, stock o la venta")
+    void anular_sinMotivo_falla() {
+        assertThatThrownBy(() -> ventaService.anularVenta(
+                ID_VENTA, new AnularVentaDTO("   ")))
+                .isInstanceOf(DatosInvalidosException.class)
+                .hasMessageContaining("motivo");
+        verify(ventaRepository, never()).findById(any());
+        verify(cajaService, never()).anularCobrosDeVenta(any(), any());
+        verify(stockService, never()).devolverStockDeVenta(any(), any());
+    }
+
+    @Test
+    @DisplayName("Si falla la caja, la venta no se marca como anulada")
+    void anular_fallaCaja_noMarcaAnulada() {
+        Venta venta = ventaConfirmada();
+        when(ventaRepository.findById(ID_VENTA)).thenReturn(Optional.of(venta));
+        doThrow(new OperacionNoPermitidaException("Sin caja abierta"))
+                .when(cajaService).anularCobrosDeVenta(eq(ID_VENTA), any());
+
+        assertThatThrownBy(() -> ventaService.anularVenta(
+                ID_VENTA, new AnularVentaDTO("Motivo")))
+                .isInstanceOf(OperacionNoPermitidaException.class);
+        assertThat(venta.getEstado()).isEqualTo(EstadoVenta.CONFIRMADA);
+        verify(ventaRepository, never()).save(any());
+        verify(stockService, never()).devolverStockDeVenta(any(), any());
+    }
+
+    @Test
+    @DisplayName("Si falla el stock, la venta no se marca como anulada")
+    void anular_fallaStock_noMarcaAnulada() {
+        Venta venta = ventaConfirmada();
+        when(ventaRepository.findById(ID_VENTA)).thenReturn(Optional.of(venta));
+        doThrow(new OperacionNoPermitidaException("Fallo el stock"))
+                .when(stockService).devolverStockDeVenta(eq(ID_VENTA), any());
+
+        assertThatThrownBy(() -> ventaService.anularVenta(
+                ID_VENTA, new AnularVentaDTO("Motivo")))
+                .isInstanceOf(OperacionNoPermitidaException.class);
+        assertThat(venta.getEstado()).isEqualTo(EstadoVenta.CONFIRMADA);
         verify(ventaRepository, never()).save(any());
     }
 

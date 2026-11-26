@@ -1,5 +1,6 @@
 package com.taller.gestion.venta.controller;
 
+import com.taller.gestion.venta.dto.AnularVentaDTO;
 import com.taller.gestion.venta.dto.VentaCreateDTO;
 import com.taller.gestion.venta.dto.VentaResponseDTO;
 import com.taller.gestion.venta.entity.EstadoVenta;
@@ -30,7 +31,8 @@ import java.time.LocalDate;
 @Tag(name = "Ventas", description = "Alta, consulta y anulación de ventas. La venta se confirma "
         + "al cargarla: no existe estado pendiente. El vendedor se toma de la sesión y el precio "
         + "de la lista del tipo de cliente. Requiere caja abierta: cada pago genera un ingreso "
-        + "en la sesión. No se descuenta stock ni se generan comprobantes.")
+        + "en la sesión. La anulación revierte los cobros y devuelve el stock descontado, si lo "
+        + "hubo. No se descuenta stock al confirmar (VEN-10) ni se generan comprobantes.")
 public class VentaController {
 
     private final VentaService ventaService;
@@ -76,14 +78,19 @@ public class VentaController {
     }
 
     @PutMapping("/{id_venta}/anular")
-    @Operation(summary = "Anular una venta", description = "Cambia el estado a ANULADA. La venta "
-            + "no se borra y no se revierte stock.")
+    @Operation(summary = "Anular una venta", description = "Cambia el estado a ANULADA sin borrar "
+            + "nada. Requiere caja abierta y motivo: crea un EGRESO/ANULACION por cada cobro "
+            + "original en la sesión actual y revierte las salidas de stock que la venta haya "
+            + "generado. Todo se guarda en la misma transacción.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Venta anulada"),
+            @ApiResponse(responseCode = "400", description = "Motivo obligatorio inválido"),
             @ApiResponse(responseCode = "404", description = "Venta no encontrada"),
-            @ApiResponse(responseCode = "409", description = "La venta ya estaba anulada")
+            @ApiResponse(responseCode = "409", description = "Venta ya anulada, sin caja abierta "
+                    + "o efectivo insuficiente para la devolución")
     })
-    public VentaResponseDTO anular(@PathVariable Long id_venta) {
-        return ventaService.anularVenta(id_venta);
+    public VentaResponseDTO anular(@PathVariable Long id_venta,
+                                   @Valid @RequestBody AnularVentaDTO dto) {
+        return ventaService.anularVenta(id_venta, dto);
     }
 }

@@ -35,6 +35,16 @@ public interface MovimientoStockRepository
             """)
     List<MovimientoStock> listarPorProducto(@Param("id_producto") Long id_producto);
 
+    /** Movimientos que una venta generó en stock. Se usan para revertirlos al anular (CAJA-07). */
+    @Query("""
+            SELECT m FROM MovimientoStock m
+            WHERE m.venta.id_venta = :id_venta AND m.tipo = :tipo
+            ORDER BY m.id_movimiento_stock ASC
+            """)
+    List<MovimientoStock> listarPorVentaYTipo(
+            @Param("id_venta") Long id_venta,
+            @Param("tipo") TipoMovimientoStock tipo);
+
     /**
      * Los filtros se arman con Criteria en vez de JPQL con parámetros opcionales: cuando un
      * parámetro llega null, PostgreSQL no puede inferir su tipo en {@code :param IS NULL} y falla

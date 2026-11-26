@@ -10,6 +10,9 @@ import com.taller.gestion.stock.entity.TipoMovimientoStock;
 import com.taller.gestion.usuario.entity.Rol;
 import com.taller.gestion.usuario.entity.Usuario;
 import com.taller.gestion.usuario.repository.UsuarioRepository;
+import com.taller.gestion.venta.entity.EstadoVenta;
+import com.taller.gestion.venta.entity.Venta;
+import com.taller.gestion.venta.repository.VentaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +54,8 @@ class MovimientoStockRepositoryTest {
     private InsumoRepository insumoRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private VentaRepository ventaRepository;
 
     private Usuario usuario() {
         Usuario u = new Usuario();
@@ -179,5 +184,45 @@ class MovimientoStockRepositoryTest {
                 null, null, null, null, null,
                 null, LocalDateTime.of(2026, 11, 1, 23, 59), pagina());
         assertThat(hasta.getTotalElements()).isEqualTo(1);
+    }
+
+    private Venta venta(Usuario vendedor) {
+        Venta v = new Venta();
+        v.setId_cliente(1L);
+        v.setId_vendedor(vendedor.getId_usuario());
+        v.setTotal(new BigDecimal("200.00"));
+        v.setEstado(EstadoVenta.CONFIRMADA);
+        return ventaRepository.save(v);
+    }
+
+    @Test
+    @DisplayName("listarPorVentaYTipo devuelve solo las salidas de esa venta")
+    void listarPorVentaYTipo_soloSalidasDeLaVenta() {
+        Usuario ana = usuario();
+        Venta venta = venta(ana);
+        Venta otra = venta(ana);
+        Producto p = producto("Producto con venta");
+
+        MovimientoStock salida = movimiento(p, null, ana, TipoMovimientoStock.SALIDA,
+                MotivoMovimientoStock.AJUSTE, "2.000", LocalDateTime.of(2026, 11, 5, 10, 0));
+        salida.setVenta(venta);
+        movimientoStockRepository.save(salida);
+
+        MovimientoStock entrada = movimiento(p, null, ana, TipoMovimientoStock.ENTRADA,
+                MotivoMovimientoStock.DEVOLUCION, "2.000", LocalDateTime.of(2026, 11, 5, 11, 0));
+        entrada.setVenta(venta);
+        movimientoStockRepository.save(entrada);
+
+        MovimientoStock salidaOtra = movimiento(p, null, ana, TipoMovimientoStock.SALIDA,
+                MotivoMovimientoStock.AJUSTE, "4.000", LocalDateTime.of(2026, 11, 5, 12, 0));
+        salidaOtra.setVenta(otra);
+        movimientoStockRepository.save(salidaOtra);
+
+        List<MovimientoStock> resultado = movimientoStockRepository.listarPorVentaYTipo(
+                venta.getId_venta(), TipoMovimientoStock.SALIDA);
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getCantidad()).isEqualByComparingTo("2.000");
+        assertThat(resultado.get(0).getVenta().getId_venta()).isEqualTo(venta.getId_venta());
     }
 }

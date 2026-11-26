@@ -2,7 +2,8 @@
 
 Tickets del módulo `stock` escritos como rebanadas verticales. Esta primera tanda es el
 **alcance elegido (opción B del relevamiento)**: núcleo de movimientos con ajuste manual,
-consultas/kardex y pantalla, **sin integraciones** con ventas, incidencias, caja ni costos.
+consultas/kardex y pantalla. La única integración incorporada después es CAJA-07 (devolución al
+anular ventas); siguen pendientes `VEN-10`, `INC-07` y `CST-06`.
 
 **Decisiones vigentes:**
 
@@ -313,7 +314,6 @@ Prueba manual en base limpia:
 
 - Descuento de stock al confirmar ventas (`VEN-10`).
 - Descuento al cerrar incidencias (`INC-07`).
-- Devolución de stock al anular una venta (`CAJA-07`).
 - Ingresos de mercadería y generación automática del costo (`CST-06`).
 - Pedidos, auditoría, reportes y stock negativo.
 
@@ -323,5 +323,7 @@ Prueba manual en base limpia:
   26/11/2026: ahora exige `409` sin movimiento, alineado con este módulo. Ya no hay conflicto
   pendiente.
 - `INC-07` exige `409` con stock insuficiente: es compatible con la regla de este módulo.
-- `CAJA-07` asume que anular una venta devuelve stock con un movimiento apuntando a la misma
-  venta; quedó preparado el campo `id_venta`.
+- `CAJA-07` quedó resuelto el 26/11/2026 con devolución condicional: al anular se buscan las
+  `SALIDA` con `id_venta` y se genera una `ENTRADA`/`DEVOLUCION` por cada una. Como `VEN-10`
+  todavía no descuenta, hoy no se mueve stock; cuando se implemente, debe registrar sus salidas
+  con la FK `id_venta` para que la devolución funcione sin cambios.

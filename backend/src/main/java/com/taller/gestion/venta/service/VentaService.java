@@ -8,6 +8,7 @@ import com.taller.gestion.caja.entity.SesionCaja;
 import com.taller.gestion.caja.entity.TipoMovimientoCaja;
 import com.taller.gestion.caja.repository.MovimientoCajaRepository;
 import com.taller.gestion.caja.repository.SesionCajaRepository;
+import com.taller.gestion.caja.service.CajaService;
 import com.taller.gestion.catalogo.entity.Producto;
 import com.taller.gestion.catalogo.service.ProductoService;
 import com.taller.gestion.clientes.dto.ClienteResponseDTO;
@@ -17,8 +18,10 @@ import com.taller.gestion.clientes.service.ClienteService;
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.OperacionNoPermitidaException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
+import com.taller.gestion.stock.service.StockService;
 import com.taller.gestion.usuario.entity.Usuario;
 import com.taller.gestion.usuario.service.UsuarioService;
+import com.taller.gestion.venta.dto.AnularVentaDTO;
 import com.taller.gestion.venta.dto.DetalleVentaCreateDTO;
 import com.taller.gestion.venta.dto.DetalleVentaResponseDTO;
 import com.taller.gestion.venta.dto.VentaCreateDTO;
@@ -52,6 +55,8 @@ public class VentaService {
     private final UsuarioService usuarioService;
     private final SesionCajaRepository sesionCajaRepository;
     private final MovimientoCajaRepository movimientoCajaRepository;
+    private final CajaService cajaService;
+    private final StockService stockService;
 
     /** Datos del cliente que necesita el alta, sin importar si vino de la sesión o del body. */
     private record ClienteDeVenta(Long id_cliente, String nombre, TipoCliente tipo) {
@@ -134,13 +139,29 @@ public class VentaService {
                 .map(this::mapearAResponse);
     }
 
-    /** Anula la venta sin borrarla. No hay reingreso de stock porque la venta nunca lo descontó. */
+    /**
+     * Anula la venta sin borrarla. Los cobros se revierten con contramovimientos en la sesión
+     * abierta actual y se devuelve el stock que la venta haya descontado, todo en la misma
+     * transacción: si falla caja o stock, la venta queda {@code CONFIRMADA}.
+     */
     @Transactional
-    public VentaResponseDTO anularVenta(Long id_venta) {
+    public VentaResponseDTO anularVenta(Long id_venta, AnularVentaDTO dto) {
+        if (dto == null || dto.motivo() == null || dto.motivo().isBlank()) {
+            throw new DatosInvalidosException("El motivo de la anulación es obligatorio");
+        }
+        String motivo = dto.motivo().trim();
+        if (motivo.length() > 150) {
+            throw new DatosInvalidosException("El motivo admite hasta 150 caracteres");
+        }
+
         Venta venta = obtenerPorId(id_venta);
         if (venta.getEstado() == EstadoVenta.ANULADA) {
             throw new OperacionNoPermitidaException("La venta ya está anulada");
         }
+
+        cajaService.anularCobrosDeVenta(id_venta, motivo);
+        stockService.devolverStockDeVenta(id_venta, motivo);
+
         venta.setEstado(EstadoVenta.ANULADA);
         return mapearAResponse(ventaRepository.save(venta));
     }

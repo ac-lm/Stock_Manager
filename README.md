@@ -70,11 +70,11 @@ npm run dev
 | `catalogo` | CRUD de Insumo, Producto y Producto_Insumo; el stock se modifica solo desde `stock` |
 | `proveedores` | CRUD completo de Proveedor y Proveedor_Insumo |
 | `usuario` | Login, roles y consulta del usuario autenticado |
-| `stock` | Movimientos, ajuste manual, saldos y kardex; sin integraciones con otros módulos |
+| `stock` | Movimientos, ajuste manual, saldos y kardex; devuelve stock al anular ventas (CAJA-07) |
 | `clientes` | CRUD de clientes y lista de precios por tipo |
 | `incidencias` | Alta básica de incidencias |
-| `venta` | Alta y anulación de ventas, con cobro integrado a caja |
-| `caja` | Apertura, egresos, cierre e historial; revisión de diferencias para administradores |
+| `venta` | Alta y anulación de ventas; cobro y contramovimientos integrados con caja |
+| `caja` | Apertura, egresos, cierre e historial; anulación de ventas y revisión de diferencias |
 | `costos` | Alta, edición, anulación y consulta de costos; faltan integraciones |
 | `auditoria`, `pedidos`, `reportes` | Pendientes |
 

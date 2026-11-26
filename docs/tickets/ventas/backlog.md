@@ -3,8 +3,10 @@
 Tickets del módulo `venta` escritos como rebanadas verticales. Esta primera tanda cubre solo
 **venta + detalle** (aclaración 3 de [`preguntas.md`](preguntas.md)): el alta se confirma en el
 momento, sin descuento de stock, sin pedidos y sin comprobantes. La integración con caja
-(CAJA-02) ya está incluida: exige sesión abierta y registra un ingreso por pago. Los temas
-acordados pero diferidos quedan como tickets 🔴 con su bloqueante explícito.
+(CAJA-02) ya está incluida: exige sesión abierta y registra un ingreso por pago. La anulación
+también está integrada (CAJA-07): pide motivo, revierte los cobros y devuelve stock solo si
+existen salidas vinculadas a la venta. Los temas acordados pero diferidos quedan como tickets 🔴
+con su bloqueante explícito.
 
 **Decisiones vigentes de esta tanda:**
 
@@ -45,7 +47,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 | [`VEN-07`](VEN-07-entregas-parciales.md) | Entregas parciales con `Detalle_Remito` | `VEN-06` | 🔴 |
 | [`VEN-08`](VEN-08-factura.md) | Emisión de factura | `VEN-06`, módulo de facturación | 🔴 |
 | [`VEN-09`](VEN-09-venta-desde-pedido.md) | Venta desde pedido con seña | módulos `pedidos` y `caja` | 🔴 |
-| [`VEN-10`](VEN-10-descuento-stock.md) | Descuento de stock al confirmar | módulo `stock` (`STOCK-01`) | 🔴 |
+| [`VEN-10`](VEN-10-descuento-stock.md) | Descuento de stock al confirmar | — (`STOCK-01` listo, ticket pendiente) | 🔴 |
 | [`VEN-11`](VEN-11-tests.md) | Tests del módulo | `VEN-03`, `VEN-04`, `VEN-05` | ✅ |
 | [`VEN-12`](VEN-12-documentacion-swagger.md) | Documentación Swagger | `VEN-03`, `VEN-04`, `VEN-05` | ✅ |
 | [`VEN-13`](VEN-13-frontend-ventas.md) | Frontend de ventas | `VEN-03`, `VEN-05` (resueltos) | ✅ |

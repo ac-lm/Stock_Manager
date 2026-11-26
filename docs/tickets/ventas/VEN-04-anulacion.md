@@ -19,10 +19,12 @@
 - [x] La venta no se borra.
 - [x] Un id inexistente responde 404.
 - [x] Anular dos veces responde 409.
-- [x] No revierte stock: la venta nunca lo descontó (`VEN-10`).
+- [x] Pide un motivo obligatorio y revierte los cobros con contramovimientos de caja (CAJA-07).
+- [x] Devuelve stock solo si la venta registró `SALIDA` con `id_venta`; hoy `VEN-10` no descuenta,
+  así que anular no crea mercadería.
 
 ## Endpoints
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| `PUT` | `/api/ventas/{id_venta}/anular` | Anular una venta |
+| `PUT` | `/api/ventas/{id_venta}/anular` | Anular una venta con body `{ "motivo": "..." }` |

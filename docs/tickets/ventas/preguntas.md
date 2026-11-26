@@ -66,7 +66,8 @@
 **Impacto:** cuando se implemente `VEN-10`, `StockService` valida el saldo antes de descontar y
 devuelve `409` sin guardar nada. La respuesta b quedó como registro histórico: se resolvió la
 contradicción con `PROMPT_CONTEXTO` ("stock nunca negativo") a favor de la regla general. En esta
-tanda **no se descuenta stock** porque el módulo `stock` todavía no existe (ver `VEN-10`).
+tanda **no se descuenta stock** porque `VEN-10` todavía no está implementado, aunque el módulo
+`stock` ya existe. CAJA-07 ya revierte las salidas con `id_venta` cuando las hay.
 
 ---
 

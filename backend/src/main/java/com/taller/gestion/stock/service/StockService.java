@@ -16,6 +16,7 @@ import com.taller.gestion.stock.entity.TipoMovimientoStock;
 import com.taller.gestion.stock.repository.MovimientoStockRepository;
 import com.taller.gestion.usuario.entity.Usuario;
 import com.taller.gestion.usuario.service.UsuarioService;
+import com.taller.gestion.venta.entity.Venta;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -102,6 +103,19 @@ public class StockService {
             MotivoMovimientoStock motivo,
             BigDecimal cantidad,
             String observaciones) {
+        return registrarMovimiento(
+                id_producto, id_insumo, tipo, motivo, cantidad, observaciones, null);
+    }
+
+    /** Igual que el método público, pero permite vincular el movimiento con una venta. */
+    private MovimientoStockResponseDTO registrarMovimiento(
+            Long id_producto,
+            Long id_insumo,
+            TipoMovimientoStock tipo,
+            MotivoMovimientoStock motivo,
+            BigDecimal cantidad,
+            String observaciones,
+            Venta venta) {
 
         if (tipo == null) {
             throw new DatosInvalidosException("El tipo de movimiento es obligatorio");
@@ -127,6 +141,7 @@ public class StockService {
         movimiento.setFechaHora(LocalDateTime.now());
         movimiento.setObservaciones(
                 observaciones == null || observaciones.isBlank() ? null : observaciones.trim());
+        movimiento.setVenta(venta);
 
         if (id_producto != null) {
             Producto producto = productoRepository.findByIdParaActualizar(id_producto)
@@ -147,7 +162,32 @@ public class StockService {
         return mapearMovimiento(movimientoStockRepository.save(movimiento));
     }
 
-    // Métodos de uso interno para futuras integraciones (VEN-10, INC-07, CST-06).
+    /**
+     * CAJA-07: revierte las salidas que la venta haya generado. Si VEN-10 todavía no descontó
+     * stock, no hay nada que revertir y no se guarda ningún movimiento: la anulación no crea
+     * mercadería de la nada. Cuando VEN-10 registre sus salidas con {@code id_venta}, esta
+     * devolución pasa a funcionar sin cambios.
+     */
+    @Transactional
+    public void devolverStockDeVenta(Long id_venta, String motivo) {
+        List<MovimientoStock> salidas = movimientoStockRepository.listarPorVentaYTipo(
+                id_venta, TipoMovimientoStock.SALIDA);
+
+        String texto = motivo == null || motivo.isBlank() ? null : motivo.trim();
+        for (MovimientoStock salida : salidas) {
+            registrarMovimiento(
+                    salida.getProducto() != null ? salida.getProducto().getId_producto() : null,
+                    salida.getInsumo() != null ? salida.getInsumo().getId_insumo() : null,
+                    TipoMovimientoStock.ENTRADA,
+                    MotivoMovimientoStock.DEVOLUCION,
+                    salida.getCantidad(),
+                    "Devolución por anulación de la venta #" + id_venta
+                            + (texto == null ? "" : ": " + texto),
+                    salida.getVenta());
+        }
+    }
+
+    // Métodos de uso interno para integraciones (CAJA-07, VEN-10, INC-07, CST-06).
     public MovimientoStockResponseDTO descontarProducto(
             Long id_producto, BigDecimal cantidad, MotivoMovimientoStock motivo) {
         return registrarMovimiento(
