@@ -144,6 +144,7 @@ public class CajaService {
         movimiento.setFecha(LocalDate.now());
         movimiento.setHora(LocalTime.now());
         movimiento.setObservaciones(limpiar(dto.observaciones()));
+        movimiento.setId_costo(dto.id_costo());
 
         return mapearMovimiento(movimientoCajaRepository.save(movimiento));
     }
@@ -217,6 +218,12 @@ public class CajaService {
             Pageable pageable) {
         return sesionCajaRepository.buscar(estado, id_usuario, desde, hasta, pageable)
                 .map(this::mapearSesion);
+    }
+
+    /** Consulta usada por costos para impedir la anulación de un costo ya pagado desde caja. */
+    @Transactional(readOnly = true)
+    public boolean existeEgresoVinculadoACosto(Long id_costo) {
+        return movimientoCajaRepository.existePorCosto(id_costo);
     }
 
     @Transactional(readOnly = true)

@@ -35,7 +35,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 | [CST-02](CST-02-crud-tipos-de-costo.md) | CRUD de tipos de costo | 01 | ✅ |
 | [CST-03](CST-03-registro-manual.md) | Registro manual de costos | 01, 02, `USU-01` | ✅ |
 | [CST-04](CST-04-edicion-y-anulacion.md) | Edición y anulación de costos | 03 | ✅ |
-| [CST-05](CST-05-integracion-caja.md) | Integración con caja | 04, módulo `caja` | 🔴 |
+| [CST-05](CST-05-integracion-caja.md) | Integración con caja | 04, módulo `caja` | ✅ |
 | [CST-06](CST-06-costo-desde-ingreso.md) | Costo automático desde el ingreso de mercadería | 01, módulo de ingresos | 🔴 |
 | [CST-07](CST-07-consultas-y-totales.md) | Consultas, filtros y totales | 03 | ✅ |
 | [CST-08](CST-08-auditoria-de-monto.md) | Auditar cambios de monto | 04 | 🟢 |
@@ -52,7 +52,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 5. **En paralelo:** `CST-09` y `CST-10`.
 6. `CST-11`.
 7. `CST-08`.
-8. `CST-05` y `CST-06` cuando existan los módulos `caja` e ingresos de mercadería.
+8. `CST-05` (hecho) y `CST-06` cuando exista el módulo de ingresos de mercadería.
 
 **Camino crítico:** `CST-01 → CST-02 → CST-03 → CST-04 → CST-11`.
 
@@ -61,7 +61,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 - `common`: formato de errores `ErrorResponse`, excepciones de negocio y `TextoUtil`.
 - `usuario`: `UsuarioService.obtenerAutenticado()` (`USU-01`) para registrar quién carga y anula.
 - PostgreSQL con las tablas `Costo` y `TipoCosto` (se crean/actualizan con Hibernate).
-- Para `CST-05`: módulo `caja` con el vínculo `id_costo` en los egresos.
+- Para `CST-05`: módulo `caja` con el vínculo `id_costo` en los egresos (ya disponible).
 - Para `CST-06`: módulo de ingresos de mercadería y stock.
 
 ## Verificación del módulo
@@ -89,10 +89,11 @@ Prueba manual en una base limpia:
 6. Editar el costo y anularlo con un motivo.
 7. Verificar que el costo anulado no suma al total y no se puede volver a editar ni anular.
 8. Entrar con un vendedor y comprobar que recibe 403 en `/api/costos/**` y `/api/tipos-costo/**`.
+9. Registrar un egreso de caja con `id_costo` y comprobar que anular ese costo devuelve 409 con
+   `"anulá primero el egreso"`.
 
 ## Fuera de alcance
 
-- Vinculación con egresos de caja y anulación en cascada (ver `CST-05`).
 - Generación automática del costo de insumos desde el ingreso de mercadería (ver `CST-06`).
 - Liquidación de sueldos por persona: se registra un total por período con observación.
 - Reportes y evolución del costo de insumos (corresponden al módulo `reportes`).

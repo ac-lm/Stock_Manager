@@ -1,5 +1,6 @@
 package com.taller.gestion.costos.service;
 
+import com.taller.gestion.caja.service.CajaService;
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.OperacionNoPermitidaException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
@@ -27,6 +28,7 @@ public class CostoService {
     private final CostoRepository costoRepository;
     private final TipoCostoRepository tipoCostoRepository;
     private final UsuarioService usuarioService;
+    private final CajaService cajaService;
 
     @Transactional(readOnly = true)
     public Page<CostoResponseDTO> buscar(Long id_tipo_costo, Integer mes, Integer anio,
@@ -82,8 +84,10 @@ public class CostoService {
     @Transactional
     public CostoResponseDTO anular(Long id_costo, CostoAnularDTO dto) {
         Costo costo = obtenerCostoModificable(id_costo);
-        // TODO (CST-05): si el costo está vinculado a un egreso de caja, rechazar con
-        //                OperacionNoPermitidaException ("anulá primero el egreso")
+        if (cajaService.existeEgresoVinculadoACosto(id_costo)) {
+            throw new OperacionNoPermitidaException(
+                    "El costo está vinculado a un egreso de caja: anulá primero el egreso");
+        }
 
         costo.setAnulado(true);
         costo.setMotivoAnulacion(dto.motivo());

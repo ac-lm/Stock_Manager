@@ -42,5 +42,5 @@ dejando registro de quién y por qué lo anuló.
 
 ## Pendientes relacionados
 
-- `CST-05`: rechazar la anulación si el costo está vinculado a un egreso de caja.
+- `CST-05`: ✅ implementado; la anulación rechaza costos vinculados a un egreso de caja.
 - `CST-08`: auditar el monto anterior y el nuevo.

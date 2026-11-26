@@ -256,4 +256,18 @@ class CostoControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensaje").value("El costo ya está anulado"));
     }
+
+    @Test
+    @DisplayName("PATCH /api/costos/{id}/anulacion con egreso vinculado: 409 con la acción (CST-05)")
+    void anular_conEgresoVinculado_devuelve409() throws Exception {
+        when(costoService.anular(any(), any())).thenThrow(new OperacionNoPermitidaException(
+                "El costo está vinculado a un egreso de caja: anulá primero el egreso"));
+
+        mockMvc.perform(patch("/api/costos/10/anulacion")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CostoAnularDTO("Motivo"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.mensaje")
+                        .value("El costo está vinculado a un egreso de caja: anulá primero el egreso"));
+    }
 }

@@ -21,6 +21,7 @@ import com.taller.gestion.common.security.SecurityConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -37,6 +38,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -192,11 +194,31 @@ class CajaControllerTest {
                                 ConceptoMovimientoCaja.RETIRO,
                                 MedioPago.EFECTIVO,
                                 new BigDecimal("200.00"),
-                                "Retiro para depositar"))))
+                                "Retiro para depositar", null))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id_movimiento_caja").value(10))
                 .andExpect(jsonPath("$.tipo").value("EGRESO"))
                 .andExpect(jsonPath("$.monto").value(200.00));
+    }
+
+    @Test
+    @DisplayName("POST egreso con id_costo: el vínculo llega al service")
+    void registrarEgreso_conCostoVinculado_pasaIdCosto() throws Exception {
+        when(cajaService.registrarEgreso(eq(1L), any(MovimientoCajaCreateDTO.class)))
+                .thenReturn(movimiento());
+
+        mockMvc.perform(post("/api/caja/sesiones/1/movimientos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"concepto":"GASTO","medioPago":"TRANSFERENCIA",
+                                 "monto":200.00,"observaciones":"Pago de alquiler","id_costo":10}
+                                """))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<MovimientoCajaCreateDTO> captor =
+                ArgumentCaptor.forClass(MovimientoCajaCreateDTO.class);
+        verify(cajaService).registrarEgreso(eq(1L), captor.capture());
+        assertThat(captor.getValue().id_costo()).isEqualTo(10L);
     }
 
     @Test
@@ -208,7 +230,7 @@ class CajaControllerTest {
                                 ConceptoMovimientoCaja.GASTO,
                                 MedioPago.EFECTIVO,
                                 BigDecimal.ZERO,
-                                null))))
+                                null, null))))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(cajaService);

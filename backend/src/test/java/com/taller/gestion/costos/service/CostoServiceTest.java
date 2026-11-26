@@ -1,5 +1,6 @@
 package com.taller.gestion.costos.service;
 
+import com.taller.gestion.caja.service.CajaService;
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.OperacionNoPermitidaException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
@@ -50,6 +51,9 @@ class CostoServiceTest {
 
     @Mock
     private UsuarioService usuarioService;
+
+    @Mock
+    private CajaService cajaService;
 
     @InjectMocks
     private CostoService costoService;
@@ -270,6 +274,22 @@ class CostoServiceTest {
         assertThat(costo.getFechaAnulacion()).isNotNull();
         assertThat(resultado.motivoAnulacion()).isEqualTo("Carga duplicada");
         assertThat(resultado.id_usuario_anulacion()).isEqualTo(7L);
+        verify(cajaService).existeEgresoVinculadoACosto(10L);
+    }
+
+    @Test
+    @DisplayName("Anulación: rechaza un costo vinculado a un egreso de caja (CST-05)")
+    void anular_conEgresoVinculado() {
+        Costo costo = costoBase();
+        when(costoRepository.findById(10L)).thenReturn(Optional.of(costo));
+        when(cajaService.existeEgresoVinculadoACosto(10L)).thenReturn(true);
+
+        assertThatThrownBy(() -> costoService.anular(10L, new CostoAnularDTO("Motivo")))
+                .isInstanceOf(OperacionNoPermitidaException.class)
+                .hasMessageContaining("anulá primero el egreso");
+
+        assertThat(costo.isAnulado()).isFalse();
+        verifyNoInteractions(usuarioService);
     }
 
     @Test

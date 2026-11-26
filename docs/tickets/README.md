@@ -42,8 +42,8 @@ dependencias resueltas.
 - **`stock` tiene el backlog definido y revisado** ([`stock/backlog.md`](stock/backlog.md));
   queda listo para implementar cuando se dé la señal.
 - **`costos` tiene el backend y la pantalla completos** (modelo, tipos, alta, edición, anulación,
-  filtros, totales, tests, Swagger y frontend); le faltan las integraciones con caja e ingresos de
-  mercadería y la auditoría de monto.
+  filtros, totales, tests, Swagger y frontend); la integración con caja (CST-05) ya está hecha y
+  le faltan la integración con ingresos de mercadería (CST-06) y la auditoría de monto (CST-08).
 - **`reportes` va último**: depende de que existan datos de todos los módulos.
 - **`auditoria` es transversal**: conviene dejarla para cuando los módulos principales ya generen eventos.
 
