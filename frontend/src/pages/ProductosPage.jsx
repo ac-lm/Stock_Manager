@@ -92,7 +92,7 @@ function ProductosPage() {
       nombre: producto.nombre ?? '',
       categoria: producto.categoria ?? '',
       precio: String(producto.precio ?? 0),
-      stockActual: String(producto.stockActual ?? 0),
+      stockActual: '0',
     })
     setError(null)
     setMensaje(null)
@@ -112,7 +112,8 @@ function ProductosPage() {
       nombre: form.nombre.trim(),
       categoria: form.categoria.trim(),
       precio: Number(form.precio || 0),
-      stockActual: Number(form.stockActual || 0),
+      // El stock solo se carga en el alta; en la edición se ajusta desde /stock/productos.
+      ...(editando ? {} : { stockActual: Number(form.stockActual || 0) }),
     }
 
     try {
@@ -374,16 +375,19 @@ function ProductosPage() {
                 />
               </label>
 
-              <label className="field">
-                <span>Stock actual</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={form.stockActual}
-                  onChange={cambiarCampo('stockActual')}
-                />
-              </label>
+              {!editando && (
+                <label className="field">
+                  <span>Stock inicial</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={form.stockActual}
+                    onChange={cambiarCampo('stockActual')}
+                  />
+                  <small className="field-help">Se registra como movimiento INICIAL.</small>
+                </label>
+              )}
             </div>
 
             <div className="modal-footer">

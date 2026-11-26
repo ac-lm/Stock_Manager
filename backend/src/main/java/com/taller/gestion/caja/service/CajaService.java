@@ -149,6 +149,60 @@ public class CajaService {
         return mapearMovimiento(movimientoCajaRepository.save(movimiento));
     }
 
+    /**
+     * Anulación de venta (CAJA-07). Registra un contramovimiento por cada pago original en la
+     * sesión abierta en este momento, sin tocar los movimientos ni las sesiones cerradas.
+     * Según el ADR 0002, la devolución aparece en la sesión del día en que sale el dinero.
+     */
+    @Transactional
+    public void anularCobrosDeVenta(Long id_venta, String motivo) {
+        Long id_sesion = sesionCajaRepository
+                .findFirstByEstadoOrderByFechaAperturaDescHoraAperturaDesc(EstadoSesionCaja.ABIERTA)
+                .map(SesionCaja::getId_sesion)
+                .orElseThrow(() -> new OperacionNoPermitidaException(
+                        "No hay una sesión de caja abierta para anular la venta"));
+
+        SesionCaja sesion = obtenerSesionParaEscritura(id_sesion);
+        if (sesion.getEstado() != EstadoSesionCaja.ABIERTA) {
+            throw new OperacionNoPermitidaException("La sesión de caja ya no está abierta");
+        }
+
+        List<MovimientoCaja> ingresos = movimientoCajaRepository
+                .listarPorVentaYTipo(id_venta, TipoMovimientoCaja.INGRESO);
+
+        // Igual que en CAJA-03: las transferencias pueden quedar en negativo, el efectivo no.
+        BigDecimal devolverEfectivo = ingresos.stream()
+                .filter(m -> m.getMedioPago() == MedioPago.EFECTIVO)
+                .map(MovimientoCaja::getMonto)
+                .reduce(CERO, BigDecimal::add);
+        if (devolverEfectivo.signum() > 0) {
+            BigDecimal disponible = calcularEsperadoAbierto(sesion, MedioPago.EFECTIVO);
+            if (devolverEfectivo.compareTo(disponible) > 0) {
+                throw new OperacionNoPermitidaException(
+                        "No hay efectivo suficiente para devolver la venta #" + id_venta
+                                + " (se necesitan $" + devolverEfectivo.toPlainString()
+                                + ", hay $" + disponible.toPlainString() + ")");
+            }
+        }
+
+        String observaciones = limpiar(motivo);
+        for (MovimientoCaja ingreso : ingresos) {
+            MovimientoCaja egreso = new MovimientoCaja();
+            egreso.setSesionCaja(sesion);
+            egreso.setUsuario(usuarioService.obtenerAutenticado());
+            egreso.setId_venta(id_venta);
+            egreso.setTipo(TipoMovimientoCaja.EGRESO);
+            egreso.setConcepto(ConceptoMovimientoCaja.ANULACION);
+            egreso.setMonto(normalizarMonto(ingreso.getMonto()));
+            egreso.setMedioPago(ingreso.getMedioPago());
+            egreso.setFecha(LocalDate.now());
+            egreso.setHora(LocalTime.now());
+            egreso.setObservaciones("Anulación de la venta #" + id_venta
+                    + (observaciones == null ? "" : ": " + observaciones));
+            movimientoCajaRepository.save(egreso);
+        }
+    }
+
     @Transactional
     public SesionCajaResponseDTO cerrar(Long id_sesion, CerrarCajaDTO dto) {
         SesionCaja sesion = obtenerSesionParaEscritura(id_sesion);

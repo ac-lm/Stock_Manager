@@ -7,6 +7,7 @@ import com.taller.gestion.common.security.RestAuthenticationEntryPoint;
 import com.taller.gestion.caja.dto.CobroVentaDTO;
 import com.taller.gestion.caja.entity.MedioPago;
 import com.taller.gestion.common.security.SecurityConfig;
+import com.taller.gestion.venta.dto.AnularVentaDTO;
 import com.taller.gestion.venta.dto.DetalleVentaCreateDTO;
 import com.taller.gestion.venta.dto.VentaCreateDTO;
 import com.taller.gestion.venta.dto.VentaResponseDTO;
@@ -28,6 +29,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -138,15 +140,26 @@ class VentaControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/ventas/{id}/anular: anula la venta")
+    @DisplayName("PUT /api/ventas/{id}/anular: anula la venta con motivo")
     void anular() throws Exception {
         VentaResponseDTO anulada = new VentaResponseDTO(1L, 1L, "Consumidor final", 5L,
                 null, null, new BigDecimal("250.00"), EstadoVenta.ANULADA, null, List.of(),
                 List.of(new CobroVentaDTO(MedioPago.EFECTIVO, new BigDecimal("250.00"))));
-        when(ventaService.anularVenta(1L)).thenReturn(anulada);
+        when(ventaService.anularVenta(eq(1L), any())).thenReturn(anulada);
 
-        mockMvc.perform(put("/api/ventas/1/anular"))
+        mockMvc.perform(put("/api/ventas/1/anular")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AnularVentaDTO("Motivo"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("ANULADA"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/ventas/{id}/anular sin motivo: 400 por validación")
+    void anular_sinMotivo_devuelve400() throws Exception {
+        mockMvc.perform(put("/api/ventas/1/anular")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new AnularVentaDTO("  "))))
+                .andExpect(status().isBadRequest());
     }
 }

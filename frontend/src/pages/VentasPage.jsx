@@ -68,6 +68,8 @@ function VentasPage() {
   const [form, setForm] = useState(formVacio)
   const [guardando, setGuardando] = useState(false)
   const [errorForm, setErrorForm] = useState(null)
+  const [motivoAnulacion, setMotivoAnulacion] = useState('')
+  const [errorMotivo, setErrorMotivo] = useState(null)
 
   useEffect(() => {
     let cancelado = false
@@ -163,6 +165,7 @@ function VentasPage() {
   const cerrarModal = () => {
     setModal(null)
     setErrorForm(null)
+    setErrorMotivo(null)
   }
 
   const abrirCrear = () => {
@@ -289,24 +292,41 @@ function VentasPage() {
     }
   }
 
-  const anular = async (venta) => {
-    if (
-      !window.confirm(
-        `¿Anular la venta #${venta.id_venta}? La venta no se borra y no se revierte stock.`,
-      )
-    ) {
+  const abrirAnular = (venta) => {
+    setSeleccionada(venta)
+    setMotivoAnulacion('')
+    setErrorForm(null)
+    setErrorMotivo(null)
+    setError(null)
+    setMensaje(null)
+    setModal('anulacion')
+  }
+
+  const anular = async (event) => {
+    event.preventDefault()
+    if (!motivoAnulacion.trim()) {
+      setErrorMotivo('Ingresá el motivo de la anulación.')
       return
     }
 
-    setError(null)
-    setMensaje(null)
+    setGuardando(true)
     try {
-      const anulada = await ventasService.anular(venta.id_venta)
+      const anulada = await ventasService.anular(
+        seleccionada.id_venta,
+        motivoAnulacion.trim(),
+      )
       setSeleccionada((prev) => (prev?.id_venta === anulada.id_venta ? anulada : prev))
       setMensaje(`Venta #${anulada.id_venta} anulada.`)
+      setModal(null)
       setRecarga((n) => n + 1)
     } catch (err) {
-      setError(err.message)
+      if (err.campos?.motivo) {
+        setErrorMotivo(err.campos.motivo)
+      } else {
+        setErrorForm(err.message)
+      }
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -422,7 +442,7 @@ function VentasPage() {
                       <button
                         type="button"
                         className="btn btn-danger btn-sm"
-                        onClick={() => anular(venta)}
+                        onClick={() => abrirAnular(venta)}
                       >
                         Anular
                       </button>
@@ -760,7 +780,7 @@ function VentasPage() {
                   <button
                     type="button"
                     className="btn btn-danger"
-                    onClick={() => anular(seleccionada)}
+                    onClick={() => abrirAnular(seleccionada)}
                   >
                     Anular venta
                   </button>
@@ -771,6 +791,49 @@ function VentasPage() {
               </div>
             </>
           )}
+        </Modal>
+      )}
+
+      {modal === 'anulacion' && seleccionada && (
+        <Modal
+          title="Anular venta"
+          subtitle={`Venta #${seleccionada.id_venta} · $${formatoNumero(seleccionada.total)}`}
+          onClose={cerrarModal}
+        >
+          <form className="form" onSubmit={anular} noValidate>
+            {errorForm && <div className="banner banner-error">{errorForm}</div>}
+
+            <div className="aviso" role="alert">
+              La venta no se borra: se revierten los cobros en la caja abierta y el stock que la
+              venta haya descontado, si lo hubo.
+            </div>
+
+            <label className="field">
+              <span>Motivo *</span>
+              <input
+                type="text"
+                value={motivoAnulacion}
+                onChange={(event) => {
+                  setMotivoAnulacion(event.target.value)
+                  if (errorMotivo) setErrorMotivo(null)
+                }}
+                maxLength={150}
+                aria-invalid={Boolean(errorMotivo)}
+                required
+                autoFocus
+              />
+              {errorMotivo && <small className="field-error">{errorMotivo}</small>}
+            </label>
+
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={cerrarModal}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn btn-danger" disabled={guardando}>
+                {guardando ? 'Anulando...' : 'Anular venta'}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
     </section>

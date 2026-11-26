@@ -7,6 +7,9 @@ import com.taller.gestion.catalogo.entity.Insumo;
 import com.taller.gestion.catalogo.repository.InsumoRepository;
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
+import com.taller.gestion.stock.entity.MotivoMovimientoStock;
+import com.taller.gestion.stock.entity.TipoMovimientoStock;
+import com.taller.gestion.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,9 @@ import java.util.List;
 public class InsumoService {
 
     private final InsumoRepository insumoRepository;
+
+    // StockService usa InsumoRepository, no este servicio: no hay ciclo de dependencias.
+    private final StockService stockService;
 
     @Transactional(readOnly = true)
     public List<InsumoResponseDTO> listarInsumos() {
@@ -48,14 +54,25 @@ public class InsumoService {
     public InsumoResponseDTO crearInsumo(InsumoCreateDTO dto) {
         validarNombreYUnidad(dto.nombre(), dto.unidadMedida());
 
+        BigDecimal stockInicial = dto.stockActual() != null ? dto.stockActual() : BigDecimal.ZERO;
+        if (stockInicial.compareTo(BigDecimal.ZERO) < 0) {
+            throw new DatosInvalidosException("El stock inicial no puede ser negativo");
+        }
+
         Insumo insumo = new Insumo();
         insumo.setNombre(dto.nombre());
-        insumo.setStockActual(dto.stockActual() != null ? dto.stockActual() : BigDecimal.ZERO);
+        insumo.setStockActual(BigDecimal.ZERO);
         insumo.setUnidadMedida(dto.unidadMedida());
         insumo.setStockMinimo(dto.stockMinimo() != null ? dto.stockMinimo() : 0);
         insumo.setCosto(dto.costo() != null ? dto.costo() : BigDecimal.ZERO);
 
-        return mapearAResponse(insumoRepository.save(insumo));
+        Insumo guardado = insumoRepository.save(insumo);
+        if (stockInicial.compareTo(BigDecimal.ZERO) > 0) {
+            stockService.registrarMovimiento(
+                    null, guardado.getId_insumo(), TipoMovimientoStock.ENTRADA,
+                    MotivoMovimientoStock.INICIAL, stockInicial, "Stock inicial del alta");
+        }
+        return mapearAResponse(guardado);
     }
 
     @Transactional
@@ -71,9 +88,6 @@ public class InsumoService {
 
         if (dto.nombre() != null) {
             insumo.setNombre(dto.nombre());
-        }
-        if (dto.stockActual() != null) {
-            insumo.setStockActual(dto.stockActual());
         }
         if (dto.unidadMedida() != null) {
             insumo.setUnidadMedida(dto.unidadMedida());

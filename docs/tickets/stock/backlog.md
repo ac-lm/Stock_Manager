@@ -2,7 +2,8 @@
 
 Tickets del módulo `stock` escritos como rebanadas verticales. Esta primera tanda es el
 **alcance elegido (opción B del relevamiento)**: núcleo de movimientos con ajuste manual,
-consultas/kardex y pantalla, **sin integraciones** con ventas, incidencias, caja ni costos.
+consultas/kardex y pantalla. La única integración incorporada después es CAJA-07 (devolución al
+anular ventas); siguen pendientes `VEN-10`, `INC-07` y `CST-06`.
 
 **Decisiones vigentes:**
 
@@ -36,13 +37,13 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | ID | Ticket | Bloqueado por | Estado |
 |---|---|---|---|
-| [STOCK-01](#stock-01--modelo-y-entidad-movimiento_stock) | Modelo y entidad `Movimiento_Stock` | Propuesta aceptada; ajustar si aparece el XML | 🟢 |
-| [STOCK-02](#stock-02--servicio-unico-de-movimientos) | Servicio único de movimientos | 01 | 🟢 |
-| [STOCK-03](#stock-03--api-rest-y-kardex) | API REST y kardex | 01, 02 | 🟢 |
-| [STOCK-04](#stock-04--catalogo-sin-edicion-directa-de-stock) | Catálogo sin edición directa de stock | 02 | 🟢 |
-| [STOCK-05](#stock-05--pantallas-de-stock) | Pantallas de stock de insumos y productos | 03 | 🟢 |
-| [STOCK-06](#stock-06--tests) | Tests del módulo | 02, 03, 04 | 🟢 |
-| [STOCK-07](#stock-07--documentacion-y-swagger) | Documentación y Swagger | 01, 03, 05 | 🟢 |
+| [STOCK-01](#stock-01--modelo-y-entidad-movimiento_stock) | Modelo y entidad `Movimiento_Stock` | Propuesta aceptada; ajustar si aparece el XML | ✅ |
+| [STOCK-02](#stock-02--servicio-unico-de-movimientos) | Servicio único de movimientos | 01 | ✅ |
+| [STOCK-03](#stock-03--api-rest-y-kardex) | API REST y kardex | 01, 02 | ✅ |
+| [STOCK-04](#stock-04--catalogo-sin-edicion-directa-de-stock) | Catálogo sin edición directa de stock | 02 | ✅ |
+| [STOCK-05](#stock-05--pantallas-de-stock) | Pantallas de stock de insumos y productos | 03 | ✅ |
+| [STOCK-06](#stock-06--tests) | Tests del módulo | 02, 03, 04 | ✅ |
+| [STOCK-07](#stock-07--documentacion-y-swagger) | Documentación y Swagger | 01, 03, 05 | ✅ |
 
 ## Orden recomendado
 
@@ -69,7 +70,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟢 Listo (propuesta aceptada; ajustar si aparece el export de Vertabelo) |
+| Estado | ✅ Hecho (propuesta aceptada; ajustar si aparece el export de Vertabelo) |
 | Bloqueado por | Validación del modelo de datos |
 | Bloquea | `STOCK-02`, `STOCK-03` |
 | Etiquetas | `stock`, `backend`, `db` |
@@ -113,7 +114,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟢 Listo |
+| Estado | ✅ Hecho |
 | Bloqueado por | `STOCK-01` |
 | Bloquea | `STOCK-03`, `STOCK-04`, `STOCK-06` |
 | Etiquetas | `stock`, `backend` |
@@ -145,7 +146,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟢 Listo |
+| Estado | ✅ Hecho |
 | Bloqueado por | `STOCK-01`, `STOCK-02` |
 | Bloquea | `STOCK-05`, `STOCK-06`, `STOCK-07` |
 | Etiquetas | `stock`, `backend` |
@@ -184,7 +185,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟢 Listo |
+| Estado | ✅ Hecho |
 | Bloqueado por | `STOCK-02` |
 | Bloquea | `STOCK-06` |
 | Etiquetas | `stock`, `catalogo`, `backend`, `frontend` |
@@ -213,7 +214,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟢 Listo |
+| Estado | ✅ Hecho |
 | Bloqueado por | `STOCK-03` |
 | Bloquea | `STOCK-07` |
 | Etiquetas | `stock`, `frontend` |
@@ -243,7 +244,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟢 Listo |
+| Estado | ✅ Hecho |
 | Bloqueado por | `STOCK-02`, `STOCK-03`, `STOCK-04` |
 | Bloquea | — |
 | Etiquetas | `stock`, `tests` |
@@ -267,7 +268,7 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 
 | Campo | Valor |
 |---|---|
-| Estado | 🟢 Listo |
+| Estado | ✅ Hecho |
 | Bloqueado por | `STOCK-01`, `STOCK-03`, `STOCK-05` |
 | Bloquea | — |
 | Etiquetas | `stock`, `docs` |
@@ -313,7 +314,6 @@ Prueba manual en base limpia:
 
 - Descuento de stock al confirmar ventas (`VEN-10`).
 - Descuento al cerrar incidencias (`INC-07`).
-- Devolución de stock al anular una venta (`CAJA-07`).
 - Ingresos de mercadería y generación automática del costo (`CST-06`).
 - Pedidos, auditoría, reportes y stock negativo.
 
@@ -323,5 +323,7 @@ Prueba manual en base limpia:
   26/11/2026: ahora exige `409` sin movimiento, alineado con este módulo. Ya no hay conflicto
   pendiente.
 - `INC-07` exige `409` con stock insuficiente: es compatible con la regla de este módulo.
-- `CAJA-07` asume que anular una venta devuelve stock con un movimiento apuntando a la misma
-  venta; quedó preparado el campo `id_venta`.
+- `CAJA-07` quedó resuelto el 26/11/2026 con devolución condicional: al anular se buscan las
+  `SALIDA` con `id_venta` y se genera una `ENTRADA`/`DEVOLUCION` por cada una. Como `VEN-10`
+  todavía no descuenta, hoy no se mueve stock; cuando se implemente, debe registrar sus salidas
+  con la FK `id_venta` para que la devolución funcione sin cambios.

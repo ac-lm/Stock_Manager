@@ -550,4 +550,112 @@ class CajaServiceTest {
                 .isInstanceOf(RecursoNoEncontradoException.class)
                 .hasMessageContaining("99");
     }
+
+    // ======================= ANULACIÓN DE VENTAS (CAJA-07) =======================
+
+    private MovimientoCaja ingresoDeVenta(MedioPago medio, String monto) {
+        MovimientoCaja m = new MovimientoCaja();
+        m.setId_venta(3L);
+        m.setMedioPago(medio);
+        m.setMonto(new BigDecimal(monto));
+        return m;
+    }
+
+    private void prepararSesionAbiertaParaAnulacion() {
+        SesionCaja abierta = sesion(EstadoSesionCaja.ABIERTA);
+        abierta.setMontoInicial(BigDecimal.ZERO);
+        when(sesionCajaRepository.findFirstByEstadoOrderByFechaAperturaDescHoraAperturaDesc(
+                EstadoSesionCaja.ABIERTA)).thenReturn(Optional.of(abierta));
+        when(sesionCajaRepository.findByIdForUpdate(ID_SESION)).thenReturn(Optional.of(abierta));
+    }
+
+    private void prepararEfectivoDisponible(String ingresos) {
+        when(movimientoCajaRepository.sumarPorTipoYMedio(
+                ID_SESION, MedioPago.EFECTIVO, TipoMovimientoCaja.INGRESO))
+                .thenReturn(new BigDecimal(ingresos));
+        when(movimientoCajaRepository.sumarPorTipoYMedio(
+                ID_SESION, MedioPago.EFECTIVO, TipoMovimientoCaja.EGRESO))
+                .thenReturn(BigDecimal.ZERO);
+    }
+
+    @Test
+    @DisplayName("Anular un pago mixto: un EGRESO/ANULACION por pago, con motivo y en la sesión actual")
+    void anularCobros_pagoMixto_generaContramovimientos() {
+        prepararSesionAbiertaParaAnulacion();
+        prepararEfectivoDisponible("1500.00");
+        when(movimientoCajaRepository.listarPorVentaYTipo(3L, TipoMovimientoCaja.INGRESO))
+                .thenReturn(List.of(
+                        ingresoDeVenta(MedioPago.EFECTIVO, "100.00"),
+                        ingresoDeVenta(MedioPago.TRANSFERENCIA, "150.00")));
+        when(usuarioService.obtenerAutenticado())
+                .thenReturn(usuario(1L, "Ana", Rol.VENDEDOR));
+
+        cajaService.anularCobrosDeVenta(3L, "  Producto defectuoso  ");
+
+        ArgumentCaptor<MovimientoCaja> captor = ArgumentCaptor.forClass(MovimientoCaja.class);
+        verify(movimientoCajaRepository, times(2)).save(captor.capture());
+        List<MovimientoCaja> egresos = captor.getAllValues();
+        assertThat(egresos).extracting(MovimientoCaja::getTipo)
+                .containsOnly(TipoMovimientoCaja.EGRESO);
+        assertThat(egresos).extracting(MovimientoCaja::getConcepto)
+                .containsOnly(ConceptoMovimientoCaja.ANULACION);
+        assertThat(egresos).extracting(MovimientoCaja::getId_venta).containsOnly(3L);
+        assertThat(egresos).extracting(m -> m.getSesionCaja().getId_sesion())
+                .containsOnly(ID_SESION);
+        assertThat(egresos).extracting(m -> m.getUsuario().getId_usuario()).containsOnly(1L);
+        assertThat(egresos).extracting(MovimientoCaja::getMedioPago)
+                .containsExactly(MedioPago.EFECTIVO, MedioPago.TRANSFERENCIA);
+        assertThat(egresos).extracting(MovimientoCaja::getMonto)
+                .containsExactly(new BigDecimal("100.00"), new BigDecimal("150.00"));
+        assertThat(egresos).extracting(MovimientoCaja::getObservaciones)
+                .containsExactly("Anulación de la venta #3: Producto defectuoso",
+                        "Anulación de la venta #3: Producto defectuoso");
+        assertThat(egresos).allSatisfy(m -> {
+            assertThat(m.getFecha()).isNotNull();
+            assertThat(m.getHora()).isNotNull();
+        });
+    }
+
+    @Test
+    @DisplayName("Anular sin caja abierta: falla y no guarda contramovimientos")
+    void anularCobros_sinCajaAbierta_falla() {
+        when(sesionCajaRepository.findFirstByEstadoOrderByFechaAperturaDescHoraAperturaDesc(
+                EstadoSesionCaja.ABIERTA)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> cajaService.anularCobrosDeVenta(3L, "Motivo"))
+                .isInstanceOf(OperacionNoPermitidaException.class)
+                .hasMessageContaining("caja abierta");
+        verify(movimientoCajaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Anular con efectivo insuficiente en la sesión actual: falla y no guarda nada")
+    void anularCobros_efectivoInsuficiente_falla() {
+        prepararSesionAbiertaParaAnulacion();
+        prepararEfectivoDisponible("0.00");
+        when(movimientoCajaRepository.listarPorVentaYTipo(3L, TipoMovimientoCaja.INGRESO))
+                .thenReturn(List.of(ingresoDeVenta(MedioPago.EFECTIVO, "1000.01")));
+
+        assertThatThrownBy(() -> cajaService.anularCobrosDeVenta(3L, "Motivo"))
+                .isInstanceOf(OperacionNoPermitidaException.class)
+                .hasMessageContaining("efectivo suficiente");
+        verify(movimientoCajaRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Anular una venta pagada con transferencia: no hay límite de efectivo")
+    void anularCobros_transferenciaSinLimite() {
+        prepararSesionAbiertaParaAnulacion();
+        when(movimientoCajaRepository.listarPorVentaYTipo(3L, TipoMovimientoCaja.INGRESO))
+                .thenReturn(List.of(ingresoDeVenta(MedioPago.TRANSFERENCIA, "5000.00")));
+        when(usuarioService.obtenerAutenticado())
+                .thenReturn(usuario(1L, "Ana", Rol.VENDEDOR));
+
+        cajaService.anularCobrosDeVenta(3L, "Motivo");
+
+        ArgumentCaptor<MovimientoCaja> captor = ArgumentCaptor.forClass(MovimientoCaja.class);
+        verify(movimientoCajaRepository).save(captor.capture());
+        assertThat(captor.getValue().getMonto()).isEqualByComparingTo("5000.00");
+        assertThat(captor.getValue().getMedioPago()).isEqualTo(MedioPago.TRANSFERENCIA);
+    }
 }

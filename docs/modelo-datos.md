@@ -25,7 +25,7 @@ Materias primas que consume la producción.
 |---|---|---|
 | `id_insumo` | `bigint` | PK, autoincremental |
 | `nombre` | `varchar(50)` | not null |
-| `stock_actual` | `integer` | not null |
+| `stock_actual` | `numeric(12,3)` | not null |
 | `unidad_medida` | `varchar(50)` | not null |
 | `stock_minimo` | `integer` | not null |
 | `costo` | `numeric(12,2)` | not null |
@@ -150,8 +150,9 @@ Los renglones viven en `Detalle_Venta` con `@OneToMany` y `orphanRemoval`. Al co
 se exige una sesión `Sesion_Caja` `ABIERTA` y se crea un `Movimiento_Caja` `INGRESO`/`VENTA` por
 cada pago, con `id_venta`; venta y movimientos se guardan en la misma transacción. No existe
 `Venta.medio_pago` ni una tabla de pagos: los pagos se consultan desde `Movimiento_Caja` por
-`id_venta` y se exponen en `VentaResponseDTO.pagos`. La anulación con contramovimientos queda
-para CAJA-07.
+`id_venta` y se exponen en `VentaResponseDTO.pagos`. Al anular (CAJA-07) la venta pasa a
+`ANULADA` sin borrarse, se crea un `EGRESO`/`ANULACION` por cada pago en la sesión abierta actual
+y se guardan las `ENTRADA`/`DEVOLUCION` de stock que correspondan, todo en una transacción.
 
 ### `Costo` (módulo `costos`)
 
@@ -211,7 +212,7 @@ La revisión solo la puede hacer un administrador y no cambia los montos.
 | `id_movimiento_caja` | `bigint` | PK, autoincremental |
 | `id_sesion_caja` | `bigint` | not null, FK → `Sesion_Caja` |
 | `id_usuario` | `bigint` | not null, FK → `Usuario` |
-| `id_venta` | `bigint` | nullable; se usa en Fase 2 |
+| `id_venta` | `bigint` | nullable; ingreso por venta (CAJA-02) y contramovimiento por anulación (CAJA-07) |
 | `id_costo` | `bigint` | nullable; se usa con CST-05 |
 | `tipo` | `varchar(20)` | `INGRESO`, `EGRESO` |
 | `concepto` | `varchar(20)` | `VENTA`, `RETIRO`, `GASTO`, `ANULACION` |
@@ -222,7 +223,9 @@ La revisión solo la puede hacer un administrador y no cambia los montos.
 | `observaciones` | `varchar(150)` | nullable |
 
 Los movimientos no se editan ni se borran: una anulación se registra con un contramovimiento.
-En Fase 1 solo se crean egresos `RETIRO`/`GASTO`; los ingresos por venta llegan con CAJA-02.
+Además de los egresos `RETIRO`/`GASTO` y los ingresos `VENTA` (CAJA-02), CAJA-07 crea egresos
+`ANULACION` en la sesión abierta actual, con el mismo monto y medio del ingreso original y el
+motivo en `observaciones`.
 
 ### `Cierre_Caja_Detalle` (módulo `caja`)
 
@@ -238,14 +241,37 @@ La clave es compuesta (`id_sesion`, `medio_pago`). Siempre se crean las dos fila
 aunque algún medio quede en cero. El `total_declarado` de `TRANSFERENCIA` es el neto de la
 sesión (ingresos − egresos) y puede ser negativo; el de `EFECTIVO` no puede ser negativo.
 
+### `Movimiento_Stock` (módulo `stock`)
+
+Trazabilidad de entradas y salidas de stock. Cada movimiento afecta **exactamente uno** de
+`Producto` o `Insumo`, es inmutable y se guarda en la misma transacción que el cambio de saldo.
+
+| Columna | Tipo | Restricciones |
+|---|---|---|
+| `id_movimiento_stock` | `bigint` | PK, autoincremental |
+| `id_producto` | `bigint` | FK → `Producto`, nullable |
+| `id_insumo` | `bigint` | FK → `Insumo`, nullable |
+| `tipo` | `varchar(10)` | `ENTRADA` o `SALIDA`, not null |
+| `cantidad` | `numeric(12,3)` | not null, mayor a cero |
+| `motivo` | `varchar(30)` | `INICIAL`, `COMPRA`, `AJUSTE`, `MERMA` o `DEVOLUCION`, not null |
+| `id_usuario` | `bigint` | FK → `Usuario`, not null |
+| `fecha_hora` | `timestamp` | not null |
+| `observaciones` | `varchar(150)` | nullable |
+| `id_venta` | `bigint` | FK → `Venta`, nullable; salidas por venta (`VEN-10`) y devoluciones por anulación (CAJA-07) |
+| `id_ingreso_mercaderia` | `bigint` | nullable; reservado para `CST-06` |
+
+Regla de integridad: exactamente uno de `id_producto` / `id_insumo` debe estar presente. El
+saldo nunca puede ser negativo: una `SALIDA` mayor al saldo se rechaza con `409` y no persiste
+ni el movimiento ni el cambio. `INICIAL` se genera al dar de alta un producto/insumo con stock;
+el usuario siempre se toma de la sesión. La estructura quedó aceptada en la revisión del
+backlog ([`tickets/stock/backlog.md`](tickets/stock/backlog.md#stock-01--modelo-y-entidad-movimiento_stock));
+si aparece el export de Vertabelo se contrastan los nombres antes de cualquier cambio.
+
 ## Tablas pendientes
 
 Además de las documentadas, el modelo de Vertabelo contempla tablas que todavía no están
 implementadas en el backend:
 
-- `Movimiento_Stock`: estructura propuesta y decisiones en
-  [`tickets/stock/backlog.md`](tickets/stock/backlog.md#stock-01--modelo-y-entidad-movimiento_stock).
-  Se documenta acá una vez implementada.
 - `Pedido` y `Detalle_Pedido`.
 - `Auditoria`.
 - `Ingreso_Mercaderia` y las tablas restantes del modelo.

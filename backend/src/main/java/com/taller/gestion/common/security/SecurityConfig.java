@@ -70,6 +70,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/caja/sesiones/*/revision")
                         .hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/caja/**").authenticated()
+                        .requestMatchers("/api/stock/**").authenticated()
                         // Swagger queda público para consultar y probar la API.
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**",
                                 "/v3/api-docs/**").permitAll()

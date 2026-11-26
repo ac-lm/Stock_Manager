@@ -30,8 +30,8 @@ faltan.
   último cierre (incluye sesiones `PENDIENTE_REVISION`). Si quien abre lo cambia, el motivo
   es obligatorio.
 - **Los movimientos no se editan ni se borran.** En Fase 1 solo se crean egresos por
-  `RETIRO` o `GASTO`; los ingresos por venta ya se registran con CAJA-02 y las anulaciones
-  llegan con CAJA-07.
+  `RETIRO` o `GASTO`; los ingresos por venta se registran con CAJA-02 y las anulaciones se
+  registran con CAJA-07 como contramovimientos.
 - **Un egreso en efectivo no puede superar el efectivo esperado en ese momento.** Los
   egresos por transferencia no tienen ese límite.
 - **Al cerrar se declara cada medio por separado.** Siempre se crean dos filas de detalle:
@@ -66,7 +66,7 @@ Leyenda: ✅ Hecho · 🟡 Parcial · 🟢 Listo · 🔴 Bloqueado.
 | [CAJA-06](#caja-06-revisar-una-sesión-con-diferencia) | Revisar una sesión con diferencia | 1 | CAJA-05 | ✅ |
 | [CAJA-09](#caja-09-historial-de-sesiones-de-caja) | Historial de sesiones | 1 | CAJA-05 | 🟡 |
 | [CAJA-02](#caja-02-cobrar-una-venta-con-uno-o-varios-medios-de-pago) | Cobrar una venta | 2 | — | ✅ |
-| [CAJA-07](#caja-07-anular-una-venta) | Anular una venta | 2 | stock | 🔴 |
+| [CAJA-07](#caja-07-anular-una-venta) | Anular una venta | 2 | — | ✅ |
 | [CAJA-08](#caja-08-corregir-un-cierre) | Corregir un cierre | 3 | CAJA-05, auditoría | 🔴 |
 
 ## Fase 1
@@ -251,17 +251,27 @@ auditar la operación de la caja.
 
 ### CAJA-07. Anular una venta
 
-**Estado:** 🔴 Bloqueado por el módulo de stock.
+**Estado:** ✅ Hecho el 26/11/2026.
 
-- Exigir una sesión `ABIERTA` (puede ser distinta de la que cobró).
-- Pedir motivo obligatorio.
-- Pasar la venta a `ANULADA` sin borrar nada.
-- Por cada ingreso de la venta, crear un `EGRESO`/`ANULACION` del mismo monto y medio,
-  con el `id_venta` original.
-- No tocar los movimientos originales ni las sesiones cerradas.
-- Limitar la devolución en efectivo al efectivo disponible.
-- Devolver stock con un `Movimiento_Stock` cuando exista el módulo (a confirmar).
-- Registrar en auditoría (postergado).
+- [x] Exigir una sesión `ABIERTA` (puede ser distinta de la que cobró). Si no hay, responde `409`.
+- [x] Pedir motivo obligatorio (`AnularVentaDTO.motivo`, hasta 150 caracteres).
+- [x] Pasar la venta a `ANULADA` sin borrar nada: la operación es una sola transacción, así que
+  si falla caja o stock la venta sigue `CONFIRMADA`.
+- [x] Por cada ingreso `VENTA` de la venta, crear un `EGRESO`/`ANULACION` del mismo monto y medio,
+  con el `id_venta` original, usuario y fecha/hora actuales y el motivo en `observaciones`.
+- [x] No tocar los movimientos originales ni las sesiones cerradas: los contramovimientos van a
+  la sesión abierta en el momento de la anulación (ADR 0002).
+- [x] Limitar la devolución en efectivo al efectivo disponible en esa sesión (`409` si alcanza
+  menos). Las transferencias no tienen ese límite, igual que en CAJA-03.
+- [x] Devolver stock con un `Movimiento_Stock` `ENTRADA`/`DEVOLUCION` **por cada `SALIDA` que la
+  venta haya registrado con su `id_venta`**, vinculado a la misma venta. Hoy VEN-10 todavía no
+  descuenta stock, por lo que no se genera stock de la nada; cuando se implemente, la devolución
+  empieza a funcionar sin cambios en este ticket.
+- [ ] Registrar en auditoría (postergado junto con el módulo `auditoria`).
+
+**Archivos:** `AnularVentaDTO`, `CajaService.anularCobrosDeVenta`,
+`StockService.devolverStockDeVenta`, `MovimientoStockRepository.listarPorVentaYTipo`,
+`VentaService.anularVenta`, `VentaController`, `ventasService.anular`, `VentasPage` y tests.
 
 ## Fase 3
 
@@ -383,7 +393,6 @@ npm run build
 ## Fuera de alcance de Fase 1
 
 - Cobro de ventas y movimientos de ingreso (CAJA-02, ✅ implementado en Fase 2).
-- Anulación de ventas y devolución de stock (CAJA-07).
 - Corrección de cierres y auditoría (CAJA-08).
 - Vínculo real con costos (CST-05).
 - Migraciones Flyway.

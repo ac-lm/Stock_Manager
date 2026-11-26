@@ -66,12 +66,17 @@ npm run dev
 
 | Módulo | Estado |
 |---|---|
-| `catalogo` | CRUD completo de Insumo, Producto y Producto_Insumo |
+| `common` | Manejo global de errores, seguridad por sesión y utilidades |
+| `catalogo` | CRUD de Insumo, Producto y Producto_Insumo; el stock se modifica solo desde `stock` |
 | `proveedores` | CRUD completo de Proveedor y Proveedor_Insumo |
+| `usuario` | Login, roles y consulta del usuario autenticado |
+| `stock` | Movimientos, ajuste manual, saldos y kardex; devuelve stock al anular ventas (CAJA-07) |
+| `clientes` | CRUD de clientes y lista de precios por tipo |
 | `incidencias` | Alta básica de incidencias |
-| `venta` | Entidad `Venta` y estructura inicial |
-| `usuario` | Entidades `Usuario` y `Rol`, sin login ni seguridad |
-| `auditoria`, `stock`, `clientes`, `pedidos`, `caja`, `costos`, `reportes`, `common` | Pendientes |
+| `venta` | Alta y anulación de ventas; cobro y contramovimientos integrados con caja |
+| `caja` | Apertura, egresos, cierre e historial; anulación de ventas y revisión de diferencias |
+| `costos` | Alta, edición, anulación y consulta de costos; faltan integraciones |
+| `auditoria`, `pedidos`, `reportes` | Pendientes |
 
 ## Documentación
 
@@ -80,6 +85,7 @@ npm run dev
 - [`docs/db/README.md`](docs/db/README.md): cómo versionar el modelo de Vertabelo.
 - [`docs/tickets/README.md`](docs/tickets/README.md): backlog por módulo y dependencias entre módulos.
 - [`docs/tickets/incidencias/backlog.md`](docs/tickets/incidencias/backlog.md): tickets del módulo incidencias.
+- [`docs/tickets/stock/backlog.md`](docs/tickets/stock/backlog.md): tickets y decisiones del módulo stock.
 
 ## Convenciones rápidas
 

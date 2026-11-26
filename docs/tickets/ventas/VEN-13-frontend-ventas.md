@@ -23,7 +23,8 @@
 - [x] Se pueden agregar/quitar renglones y se ve el total estimado.
 - [x] No existe campo de precio ni de descuento.
 - [x] El vendedor no se muestra: sale de la sesión.
-- [x] Anular pide confirmación y avisa que no se revierte stock.
+- [x] Anular abre un modal con motivo obligatorio y avisa que se revierten los cobros y el stock
+  descontado, si lo hubo (CAJA-07).
 - [x] El alta deshabilita "Confirmar venta" si no hay caja abierta (CAJA-02).
 - [x] Se pueden cargar varios pagos y se muestra el total pagado (CAJA-02).
 - [x] El detalle muestra los pagos registrados en caja (CAJA-02).

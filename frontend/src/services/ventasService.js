@@ -20,5 +20,5 @@ export const ventasService = {
 
   crear: (dto) => api.post(VENTAS, dto),
 
-  anular: (id_venta) => api.put(`${VENTAS}/${id_venta}/anular`),
+  anular: (id_venta, motivo) => api.put(`${VENTAS}/${id_venta}/anular`, { motivo }),
 }

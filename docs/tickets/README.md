@@ -23,12 +23,12 @@ dependencias resueltas.
 | `catalogo` | ✅ | — | `incidencias`, `stock`, `ventas`, `pedidos`, `costos`, `reportes` |
 | `clientes` | ✅ | — | `ventas`, `pedidos`, `reportes` |
 | `proveedores` | ✅ | `catalogo` (insumos) | `costos`, `reportes` |
-| `usuario` | 🟡 | — | `incidencias`, `ventas`, `stock`, `auditoria` |
-| `stock` | 🔴 | `catalogo`, `usuario` | `incidencias`, `ventas`, `pedidos`, `costos`, `reportes` |
-| `incidencias` | 🔴 | `catalogo` ✅, `usuario`, `stock` (solo descuento) | `reportes` |
-| `ventas` | 🔴 | `catalogo`, `clientes`, `usuario`, `stock` | `caja`, `reportes`, `auditoria` |
-| `pedidos` | 🔴 | `clientes`, `catalogo`, `stock` | `reportes` |
-| `caja` | 🔴 | `ventas`, `usuario` | `reportes` |
+| `usuario` | ✅ | — | `incidencias`, `ventas`, `stock`, `auditoria` |
+| `stock` | ✅ | `catalogo` ✅, `usuario` ✅ | `incidencias`, `ventas`, `pedidos`, `costos`, `reportes` |
+| `incidencias` | 🔴 | `catalogo` ✅, `usuario` ✅, `stock` ✅ (solo descuento) | `reportes` |
+| `ventas` | 🟡 | `catalogo` ✅, `clientes` ✅, `usuario` ✅, `stock` ✅ | `caja`, `reportes`, `auditoria` |
+| `pedidos` | 🔴 | `clientes` ✅, `catalogo` ✅, `stock` ✅ | `reportes` |
+| `caja` | 🟡 | `ventas` (alta y anulación listas), `usuario` ✅ | `reportes` |
 | `costos` | 🟡 | `catalogo`, `proveedores`, `stock`, `caja` (integraciones) | `reportes` |
 | `auditoria` | 🔴 | `usuario` (+ eventos de los demás módulos) | — (transversal) |
 | `reportes` | 🔴 | Todos | — |
@@ -39,8 +39,12 @@ dependencias resueltas.
   incidencias con descuento, confirmar ventas, recibir pedidos ni calcular costos.
 - **`usuario` es el segundo.** Varios módulos necesitan validar y registrar quién hizo cada cosa.
 - **`catalogo`, `clientes`, `proveedores` y `common` ya están**, así que no bloquean a nadie.
-- **`stock` tiene el backlog definido y revisado** ([`stock/backlog.md`](stock/backlog.md));
-  queda listo para implementar cuando se dé la señal.
+- **`stock` está implementado** ([`stock/backlog.md`](stock/backlog.md)): movimientos con
+  `409` si no alcanza el saldo, ajustes, saldos, kardex y dos pantallas. Ya está integrado con
+  la anulación de ventas (CAJA-07); siguen pendientes `VEN-10`, `INC-07` y `CST-06`.
+- **`ventas` y `caja` ya cubren el ciclo completo** de alta, cobro y anulación: la anulación
+  revierte los cobros y devuelve el stock descontado, si lo hubo (CAJA-07). Falta la corrección
+  de cierres (CAJA-08).
 - **`costos` tiene el backend y la pantalla completos** (modelo, tipos, alta, edición, anulación,
   filtros, totales, tests, Swagger y frontend); la integración con caja (CST-05) ya está hecha y
   le faltan la integración con ingresos de mercadería (CST-06) y la auditoría de monto (CST-08).

@@ -90,6 +90,27 @@ Los recursos dependientes se exponen anidados: `/api/catalogo/productos/{id_prod
 |---|---|
 | POST | `/api/incidencias` |
 
+### Stock
+
+Todos los endpoints requieren sesión iniciada; el usuario se toma de la sesión, nunca del body.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/stock/insumos` | Saldos de insumos, mínimo y `stockBajoMinimo` |
+| GET | `/api/stock/productos` | Saldos de productos |
+| POST | `/api/stock/insumos/movimientos` | Entrada/salida de un insumo |
+| POST | `/api/stock/productos/movimientos` | Entrada/salida de un producto |
+| GET | `/api/stock/insumos/{id_insumo}/movimientos` | Kardex del insumo |
+| GET | `/api/stock/productos/{id_producto}/movimientos` | Kardex del producto |
+| GET | `/api/stock/movimientos` | Historial filtrable y paginado |
+
+`StockService` es el único que escribe `stock_actual`. Bloquea la fila con
+`PESSIMISTIC_WRITE`, aplica la entrada o salida y guarda el `Movimiento_Stock` en la misma
+transacción. Una salida sin saldo suficiente devuelve `409` y no guarda nada: el stock nunca
+queda negativo. El alta de catálogo con stock genera un movimiento `INICIAL` a través del mismo
+servicio. La anulación de ventas (CAJA-07) revierte las salidas vinculadas a la venta con una
+`ENTRADA`/`DEVOLUCION`; las integraciones con incidencias, caja (cobros) y costos siguen pendientes.
+
 ### Caja
 
 | Método | Ruta | Rol |
@@ -114,9 +135,11 @@ migraciones Flyway en esta fase: el esquema se mantiene con `ddl-auto=update`.
 
 - `src/services/` contiene el cliente HTTP y un servicio por módulo.
 - `src/pages/` contiene una pantalla por módulo.
-- Las pantallas de catálogo, proveedores, ventas, costos y caja consumen la API real.
+- Las pantallas de catálogo, proveedores, ventas, costos, caja y stock consumen la API real.
 - Caja tiene `/caja` (sesión abierta o apertura), `/caja/historial` (filtros y detalle) y
   `/caja/revision` (solo administradores).
+- Stock tiene `/stock/insumos` y `/stock/productos`, visibles para ambos roles: tabla de
+  saldos, filtro por nombre, registro de movimientos y kardex.
 - El proxy de Vite evita CORS en desarrollo. Para producción o Tomcat externo habrá que configurar CORS en el módulo `common`.
 
 ## CI
@@ -139,7 +162,11 @@ cd frontend && npm run lint && npm run build
 - Módulo `common`: manejo global de excepciones, formato único de error y configuración de CORS.
 - Módulo `usuarios`: login, roles y permisos.
 - Migraciones Flyway (las dependencias ya están en el `pom.xml`, pero todavía no hay migraciones).
-- Caja Fase 2: el cobro de ventas con medios de pago ya está integrado en `VentaService`
-  (CAJA-02); falta la anulación con contramovimiento (CAJA-07), que requiere el módulo de stock.
+- Caja Fase 2: cobro (CAJA-02) y anulación con contramovimientos (CAJA-07) ya integrados en
+  `VentaService`, con devolución condicional de stock a través de `StockService`.
 - Caja Fase 3: corrección de cierres con auditoría (CAJA-08).
-- Módulos de negocio restantes: stock, pedidos, auditoría y reportes.
+- Vínculo entre egresos de caja y costos (CST-05).
+- Integraciones pendientes de stock: descuento en ventas (`VEN-10`), incidencias (`INC-07`) e
+  ingresos de mercadería (`CST-06`). `VEN-10` debe registrar sus `SALIDA` con `id_venta` para que
+  CAJA-07 las revierta automáticamente.
+- Módulos de negocio restantes: pedidos, auditoría y reportes.
