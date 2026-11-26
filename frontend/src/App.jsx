@@ -15,6 +15,7 @@ import ProductosPage from './pages/ProductosPage'
 import StockInsumosPage from './pages/StockInsumosPage'
 import StockProductosPage from './pages/StockProductosPage'
 import ProveedoresPage from './pages/ProveedoresPage'
+import ReporteVentasPorPeriodoPage from './pages/ReporteVentasPorPeriodoPage'
 import UsuariosPage from './pages/UsuariosPage'
 import VentasPage from './pages/VentasPage'
 import './styles/App.css'
@@ -48,6 +49,10 @@ function AppShell() {
               <Route path="/costos" element={<CostosPage />} />
               <Route path="/usuarios" element={<UsuariosPage />} />
               <Route path="/auditoria" element={<AuditoriaPage />} />
+              <Route
+                path="/reportes/ventas-por-periodo"
+                element={<ReporteVentasPorPeriodoPage />}
+              />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/insumos" replace />} />

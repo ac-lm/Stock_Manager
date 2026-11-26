@@ -63,7 +63,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/**").authenticated()
-                        .requestMatchers("/api/usuarios/**", "/api/costos/**", "/api/tipos-costo/**")
+                        .requestMatchers("/api/usuarios/**", "/api/costos/**", "/api/tipos-costo/**",
+                                "/api/reportes/**")
                         .hasRole("ADMINISTRADOR")
                         // Revisar una sesión con diferencia es la única operación de caja
                         // reservada al administrador.

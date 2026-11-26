@@ -8,7 +8,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 | # | Ticket | Bloqueado por | Estado |
 | --- | --- | --- | --- |
-| REP-01 | Ventas por período | VEN-01 | Listo para empezar |
+| REP-01 | Ventas por período | VEN-01 | ✅ |
 | REP-02 | Exportar un reporte a Excel, CSV y PDF | REP-01 | Listo para empezar |
 | REP-03 | Ventas por producto y productos más vendidos | REP-01 | Listo para empezar |
 | REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | Listo para empezar |
@@ -32,15 +32,17 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 **Bloqueado por:** Ninguno de Reportes (necesita VEN-01: Registrar una venta)
 
 **Criterios de aceptación**
-- [ ] Solo los administradores entran a Reportes: el backend responde 403 a cualquier otro rol, no alcanza con ocultar el menú.
-- [ ] El rango de fechas es obligatorio y las dos fechas se incluyen completas (el 31 cuenta entero).
-- [ ] Se puede agrupar por día, semana o mes.
-- [ ] Cada fila muestra el período, el total vendido, la cantidad de ventas y el ticket promedio; abajo, el total del rango.
-- [ ] Solo cuentan las ventas confirmadas; las anuladas no, aunque se hayan anulado después.
-- [ ] Los períodos sin ventas aparecen en 0 (se completan en Java).
-- [ ] Gráfico de barras del total vendido por período.
-- [ ] La consulta devuelve un DTO (no entidades) y usa SQL que funciona igual en Postgres 15 y 17.
-- [ ] Test: ventas confirmadas y anuladas en distintos días; el total coincide con la suma de Venta.total de las confirmadas.
+- [x] Solo los administradores entran a Reportes: el backend responde 403 a cualquier otro rol, no alcanza con ocultar el menú.
+- [x] El rango de fechas es obligatorio y las dos fechas se incluyen completas (el 31 cuenta entero).
+- [x] Se puede agrupar por día, semana o mes.
+- [x] Cada fila muestra el período, el total vendido, la cantidad de ventas y el ticket promedio; abajo, el total del rango.
+- [x] Solo cuentan las ventas confirmadas; las anuladas no, aunque se hayan anulado después.
+- [x] Los períodos sin ventas aparecen en 0 (se completan en Java).
+- [x] Gráfico de barras del total vendido por período.
+- [x] La consulta devuelve un DTO (no entidades) y usa SQL que funciona igual en Postgres 15 y 17.
+- [x] Test: ventas confirmadas y anuladas en distintos días; el total coincide con la suma de Venta.total de las confirmadas.
+
+**Decisiones aplicadas:** la semana empieza el lunes y su etiqueta es la fecha del lunes (`2026-09-28`); el mes se etiqueta `2026-10` en la API y `oct 2026` en la pantalla; la agrupación diaria tiene un tope de 5 años (semana y mes no). El rango se consulta como `fecha >= desde AND fecha < hasta + 1 día`.
 
 **Tablas:** Venta (solo lectura)
 

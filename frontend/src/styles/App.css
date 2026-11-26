@@ -964,3 +964,36 @@
     flex: 1;
   }
 }
+
+/* Reportes */
+
+.reporte-grafico {
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.reporte-grafico-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.reporte-grafico-titulo h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.reporte-numero {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table tfoot th,
+.table tfoot td {
+  background: #f9fafb;
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+  font-weight: 600;
+}
