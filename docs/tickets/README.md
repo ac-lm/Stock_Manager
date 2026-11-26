@@ -24,7 +24,7 @@ dependencias resueltas.
 | `clientes` | ✅ | — | `ventas`, `pedidos`, `reportes` |
 | `proveedores` | ✅ | `catalogo` (insumos) | `costos`, `reportes` |
 | `usuario` | 🟡 | — | `incidencias`, `ventas`, `stock`, `auditoria` |
-| `stock` | 🔴 | `catalogo`, `usuario` | `incidencias`, `ventas`, `pedidos`, `costos`, `reportes` |
+| `stock` | ✅ | `catalogo` ✅, `usuario` ✅ | `incidencias`, `ventas`, `pedidos`, `costos`, `reportes` |
 | `incidencias` | 🔴 | `catalogo` ✅, `usuario`, `stock` (solo descuento) | `reportes` |
 | `ventas` | 🔴 | `catalogo`, `clientes`, `usuario`, `stock` | `caja`, `reportes`, `auditoria` |
 | `pedidos` | 🔴 | `clientes`, `catalogo`, `stock` | `reportes` |
@@ -39,8 +39,9 @@ dependencias resueltas.
   incidencias con descuento, confirmar ventas, recibir pedidos ni calcular costos.
 - **`usuario` es el segundo.** Varios módulos necesitan validar y registrar quién hizo cada cosa.
 - **`catalogo`, `clientes`, `proveedores` y `common` ya están**, así que no bloquean a nadie.
-- **`stock` tiene el backlog definido y revisado** ([`stock/backlog.md`](stock/backlog.md));
-  queda listo para implementar cuando se dé la señal.
+- **`stock` está implementado** ([`stock/backlog.md`](stock/backlog.md)): movimientos con
+  `409` si no alcanza el saldo, ajustes, saldos, kardex y dos pantallas. Las integraciones con
+  ventas, incidencias, caja y costos siguen pendientes.
 - **`costos` tiene el backend y la pantalla completos** (modelo, tipos, alta, edición, anulación,
   filtros, totales, tests, Swagger y frontend); le faltan las integraciones con caja e ingresos de
   mercadería y la auditoría de monto.

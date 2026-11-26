@@ -7,6 +7,9 @@ import com.taller.gestion.catalogo.entity.Producto;
 import com.taller.gestion.catalogo.repository.ProductoRepository;
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.common.exception.RecursoNoEncontradoException;
+import com.taller.gestion.stock.entity.MotivoMovimientoStock;
+import com.taller.gestion.stock.entity.TipoMovimientoStock;
+import com.taller.gestion.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,9 @@ import java.util.List;
 public class ProductoService {
 
     private final ProductoRepository productoRepository;
+
+    // StockService usa ProductoRepository, no este servicio: no hay ciclo de dependencias.
+    private final StockService stockService;
 
     @Transactional(readOnly = true)
     public List<ProductoResponseDTO> listarProductos() {
@@ -48,13 +54,24 @@ public class ProductoService {
     public ProductoResponseDTO crearProducto(ProductoCreateDTO dto) {
         validarNombreYCategoria(dto.nombre(), dto.categoria());
 
+        BigDecimal stockInicial = dto.stockActual() != null ? dto.stockActual() : BigDecimal.ZERO;
+        if (stockInicial.compareTo(BigDecimal.ZERO) < 0) {
+            throw new DatosInvalidosException("El stock inicial no puede ser negativo");
+        }
+
         Producto producto = new Producto();
         producto.setNombre(dto.nombre());
         producto.setPrecio(dto.precio() != null ? dto.precio() : BigDecimal.ZERO);
-        producto.setStockActual(dto.stockActual() != null ? dto.stockActual() : BigDecimal.ZERO);
+        producto.setStockActual(BigDecimal.ZERO);
         producto.setCategoria(dto.categoria());
 
-        return mapearAResponse(productoRepository.save(producto));
+        Producto guardado = productoRepository.save(producto);
+        if (stockInicial.compareTo(BigDecimal.ZERO) > 0) {
+            stockService.registrarMovimiento(
+                    guardado.getId_producto(), null, TipoMovimientoStock.ENTRADA,
+                    MotivoMovimientoStock.INICIAL, stockInicial, "Stock inicial del alta");
+        }
+        return mapearAResponse(guardado);
     }
 
     @Transactional
@@ -73,9 +90,6 @@ public class ProductoService {
         }
         if (dto.precio() != null) {
             producto.setPrecio(dto.precio());
-        }
-        if (dto.stockActual() != null) {
-            producto.setStockActual(dto.stockActual());
         }
         if (dto.categoria() != null) {
             producto.setCategoria(dto.categoria());

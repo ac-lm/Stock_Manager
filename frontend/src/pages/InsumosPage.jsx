@@ -66,7 +66,7 @@ function InsumosPage() {
     setForm({
       nombre: insumo.nombre ?? '',
       unidadMedida: insumo.unidadMedida ?? '',
-      stockActual: String(insumo.stockActual ?? 0),
+      stockActual: '0',
       stockMinimo: String(insumo.stockMinimo ?? 0),
       costo: String(insumo.costo ?? 0),
     })
@@ -87,7 +87,8 @@ function InsumosPage() {
     const payload = {
       nombre: form.nombre.trim(),
       unidadMedida: form.unidadMedida.trim(),
-      stockActual: Number(form.stockActual || 0),
+      // El stock solo se carga en el alta; en la edición se ajusta desde /stock/insumos.
+      ...(editando ? {} : { stockActual: Number(form.stockActual || 0) }),
       stockMinimo: Number(form.stockMinimo || 0),
       costo: Number(form.costo || 0),
     }
@@ -223,16 +224,19 @@ function InsumosPage() {
             </label>
 
             <div className="form-row">
-              <label className="field">
-                <span>Stock actual</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={form.stockActual}
-                  onChange={cambiarCampo('stockActual')}
-                />
-              </label>
+              {!editando && (
+                <label className="field">
+                  <span>Stock inicial</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={form.stockActual}
+                    onChange={cambiarCampo('stockActual')}
+                  />
+                  <small className="field-help">Se registra como movimiento INICIAL.</small>
+                </label>
+              )}
 
               <label className="field">
                 <span>Stock mínimo</span>
