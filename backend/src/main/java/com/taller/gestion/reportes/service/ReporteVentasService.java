@@ -2,6 +2,7 @@ package com.taller.gestion.reportes.service;
 
 import com.taller.gestion.common.exception.DatosInvalidosException;
 import com.taller.gestion.reportes.dto.AgrupacionPeriodo;
+import com.taller.gestion.reportes.dto.EtiquetasPeriodo;
 import com.taller.gestion.reportes.dto.ReporteVentasPorPeriodoDTO;
 import com.taller.gestion.reportes.dto.TotalesVentasPorPeriodoDTO;
 import com.taller.gestion.reportes.dto.VentasPorPeriodoFilaDTO;
@@ -63,7 +64,8 @@ public class ReporteVentasService {
             long cantidad = dato == null ? 0L : dato.cantidadVentas();
 
             filas.add(new VentasPorPeriodoFilaDTO(
-                    etiqueta(inicio, tipo), total, cantidad, ticketPromedio(total, cantidad)));
+                    periodo(inicio, tipo), EtiquetasPeriodo.de(inicio, tipo),
+                    total, cantidad, ticketPromedio(total, cantidad)));
             totalVendido = totalVendido.add(total);
             cantidadVentas += cantidad;
         }
@@ -121,7 +123,7 @@ public class ReporteVentasService {
         return resultado;
     }
 
-    private String etiqueta(LocalDate inicio, AgrupacionPeriodo tipo) {
+    private String periodo(LocalDate inicio, AgrupacionPeriodo tipo) {
         return tipo == AgrupacionPeriodo.MES ? YearMonth.from(inicio).toString() : inicio.toString();
     }
 

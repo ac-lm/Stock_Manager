@@ -102,6 +102,18 @@
 			<artifactId>flyway-core</artifactId>
 			<scope>compile</scope>
 		</dependency>
+		<!-- Exportación de reportes. POI 5.x corre con Java 8+; OpenPDF 2.0.5 con Java 17.
+		     OpenPDF 2.1+ y 3.x compilan con Java 21, por eso no se usan en este proyecto. -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>2.0.5</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -40,7 +40,23 @@ async function construirError(response) {
   return error
 }
 
-async function request(path, { body, headers, silenciarNoAutorizado = false, ...options } = {}) {
+function nombreArchivoDe(response) {
+  const disposicion = response.headers.get('Content-Disposition') ?? ''
+  const utf8 = disposicion.match(/filename\*=UTF-8''([^;]+)/i)
+  if (utf8) return decodeURIComponent(utf8[1].trim().replace(/^"|"$/g, ''))
+
+  const simple = disposicion.match(/filename="([^"]+)"/i)
+    ?? disposicion.match(/filename=([^;]+)/i)
+  return simple ? simple[1].trim().replace(/^"|"$/g, '') : null
+}
+
+async function request(path, {
+  body,
+  headers,
+  silenciarNoAutorizado = false,
+  responseType = 'json',
+  ...options
+} = {}) {
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
     // La sesión viaja en una cookie HttpOnly; hay que pedirle al navegador que la envíe.
@@ -62,6 +78,10 @@ async function request(path, { body, headers, silenciarNoAutorizado = false, ...
     throw await construirError(response)
   }
 
+  if (responseType === 'blob') {
+    return { blob: await response.blob(), nombreArchivo: nombreArchivoDe(response) }
+  }
+
   if (response.status === 204) return null
 
   const texto = await response.text()
@@ -70,6 +90,8 @@ async function request(path, { body, headers, silenciarNoAutorizado = false, ...
 
 export const api = {
   get: (path, options) => request(path, { ...options, method: 'GET' }),
+  getBlob: (path, options) =>
+    request(path, { ...options, method: 'GET', responseType: 'blob' }),
   post: (path, body, options) => request(path, { ...options, method: 'POST', body }),
   put: (path, body, options) => request(path, { ...options, method: 'PUT', body }),
   delete: (path, options) => request(path, { ...options, method: 'DELETE' }),

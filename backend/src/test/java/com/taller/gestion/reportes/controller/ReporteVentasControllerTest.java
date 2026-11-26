@@ -54,10 +54,10 @@ class ReporteVentasControllerTest {
     private ReporteVentasPorPeriodoDTO respuesta() {
         return new ReporteVentasPorPeriodoDTO(
                 LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 3), AgrupacionPeriodo.DIA,
-                List.of(new VentasPorPeriodoFilaDTO("2026-10-01", new BigDecimal("150.00"), 2,
-                                new BigDecimal("75.00")),
-                        new VentasPorPeriodoFilaDTO("2026-10-02", new BigDecimal("0.00"), 0,
-                                new BigDecimal("0.00"))),
+                List.of(new VentasPorPeriodoFilaDTO("2026-10-01", "2026-10-01",
+                                new BigDecimal("150.00"), 2, new BigDecimal("75.00")),
+                        new VentasPorPeriodoFilaDTO("2026-10-02", "2026-10-02",
+                                new BigDecimal("0.00"), 0, new BigDecimal("0.00"))),
                 new TotalesVentasPorPeriodoDTO(new BigDecimal("150.00"), 2,
                         new BigDecimal("75.00")));
     }
@@ -98,6 +98,7 @@ class ReporteVentasControllerTest {
                 .andExpect(jsonPath("$.hasta").value("2026-10-03"))
                 .andExpect(jsonPath("$.agrupacion").value("dia"))
                 .andExpect(jsonPath("$.filas[0].periodo").value("2026-10-01"))
+                .andExpect(jsonPath("$.filas[0].etiqueta").value("2026-10-01"))
                 .andExpect(jsonPath("$.filas[0].totalVendido").value(150.00))
                 .andExpect(jsonPath("$.filas[1].cantidadVentas").value(0))
                 .andExpect(jsonPath("$.totales.totalVendido").value(150.00))

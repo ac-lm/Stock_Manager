@@ -122,6 +122,7 @@ class ReporteVentasServiceTest {
         assertThat(reporte.agrupacion()).isEqualTo(AgrupacionPeriodo.SEMANA);
         assertThat(reporte.filas()).hasSize(1);
         assertThat(reporte.filas().get(0).periodo()).isEqualTo("2026-09-28");
+        assertThat(reporte.filas().get(0).etiqueta()).isEqualTo("Semana del 2026-09-28");
         assertThat(reporte.filas().get(0).ticketPromedio()).isEqualByComparingTo("100.00");
         assertThat(reporte.totales().cantidadVentas()).isEqualTo(1);
         verify(reporteVentasRepository).consultar(any(), any(), any());

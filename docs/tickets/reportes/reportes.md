@@ -9,7 +9,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | # | Ticket | Bloqueado por | Estado |
 | --- | --- | --- | --- |
 | REP-01 | Ventas por período | VEN-01 | ✅ |
-| REP-02 | Exportar un reporte a Excel, CSV y PDF | REP-01 | Listo para empezar |
+| REP-02 | Exportar un reporte a Excel, CSV y PDF | REP-01 | ✅ |
 | REP-03 | Ventas por producto y productos más vendidos | REP-01 | Listo para empezar |
 | REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | Listo para empezar |
 | REP-05 | Ventas por vendedor | REP-01 | Listo para empezar |
@@ -42,7 +42,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 - [x] La consulta devuelve un DTO (no entidades) y usa SQL que funciona igual en Postgres 15 y 17.
 - [x] Test: ventas confirmadas y anuladas en distintos días; el total coincide con la suma de Venta.total de las confirmadas.
 
-**Decisiones aplicadas:** la semana empieza el lunes y su etiqueta es la fecha del lunes (`2026-09-28`); el mes se etiqueta `2026-10` en la API y `oct 2026` en la pantalla; la agrupación diaria tiene un tope de 5 años (semana y mes no). El rango se consulta como `fecha >= desde AND fecha < hasta + 1 día`.
+**Decisiones aplicadas:** la semana empieza el lunes y su identificador es la fecha del lunes (`2026-09-28`); el mes se identifica `2026-10` en `periodo` y se muestra `oct 2026` en `etiqueta` (la pantalla y las exportaciones usan siempre `etiqueta`); la agrupación diaria tiene un tope de 5 años (semana y mes no). El rango se consulta como `fecha >= desde AND fecha < hasta + 1 día`.
 
 **Tablas:** Venta (solo lectura)
 
@@ -55,14 +55,16 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 **Bloqueado por:** 01: Ventas por período
 
 **Criterios de aceptación**
-- [ ] Botones Excel, CSV y PDF en la pantalla del reporte.
-- [ ] El archivo se genera en el backend con la misma consulta y los mismos filtros que la pantalla.
-- [ ] Excel con encabezados, montos como números (no texto) y una fila de total.
-- [ ] CSV en UTF-8, con separador punto y coma, para que Excel en español lo abra bien.
-- [ ] PDF con título del reporte, rango de fechas, fecha de emisión y la tabla.
-- [ ] El nombre del archivo lleva el reporte y el rango, por ejemplo ventas-por-periodo_2026-10-01_2026-10-31.xlsx.
-- [ ] La exportación es una pieza común: agregarla a otro reporte no requiere escribirla de nuevo.
-- [ ] Solo administradores.
+- [x] Botones Excel, CSV y PDF en la pantalla del reporte.
+- [x] El archivo se genera en el backend con la misma consulta y los mismos filtros que la pantalla.
+- [x] Excel con encabezados, montos como números (no texto) y una fila de total.
+- [x] CSV en UTF-8, con separador punto y coma, para que Excel en español lo abra bien.
+- [x] PDF con título del reporte, rango de fechas, fecha de emisión y la tabla.
+- [x] El nombre del archivo lleva el reporte y el rango, por ejemplo ventas-por-periodo_2026-10-01_2026-10-31.xlsx.
+- [x] La exportación es una pieza común: agregarla a otro reporte no requiere escribirla de nuevo.
+- [x] Solo administradores.
+
+**Decisiones aplicadas:** un único endpoint `GET /api/reportes/exportar?reporte=...&formato=xlsx|csv|pdf&...`. Cada reporte registra un proveedor que devuelve el mismo DTO de la pantalla; los generadores de Excel (POI), CSV y PDF (OpenPDF) solo conocen el contrato `ReporteExportable`. La fecha de emisión se muestra en `America/Argentina/Buenos_Aires` como `dd/MM/yyyy HH:mm`, sin sufijo de zona. El CSV usa BOM UTF-8, `;` y coma decimal. Excel limpia los `ThreadLocal` de POI y XmlBeans al terminar.
 
 **Tablas:** Ninguna (usa el DTO del reporte)
 

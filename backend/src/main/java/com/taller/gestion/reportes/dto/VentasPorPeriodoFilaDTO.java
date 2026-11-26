@@ -6,9 +6,14 @@ import java.math.BigDecimal;
 
 @Schema(description = "Una fila del reporte de ventas por período")
 public record VentasPorPeriodoFilaDTO(
-        @Schema(description = "Etiqueta del período: día o lunes (AAAA-MM-DD), mes (AAAA-MM)",
+        @Schema(description = "Identificador del período: día o lunes (AAAA-MM-DD), mes (AAAA-MM)",
                 example = "2026-10")
         String periodo,
+
+        @Schema(description = "Etiqueta del período lista para mostrar: día (AAAA-MM-DD), "
+                + "semana (Semana del AAAA-MM-DD) o mes (mmm AAAA)",
+                example = "oct 2026")
+        String etiqueta,
 
         @Schema(description = "Total vendido en el período", example = "1500.00")
         BigDecimal totalVendido,

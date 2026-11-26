@@ -15,6 +15,11 @@ import { formatoNumero } from '../utils/format'
 // Las ventas se guardan con fecha de calendario; la zona define qué día es "hoy" en el taller.
 const ZONA_TALLER = 'America/Argentina/Buenos_Aires'
 const MAX_ANIOS_DIARIOS = 5
+const FORMATOS_EXPORTACION = [
+  { formato: 'xlsx', etiqueta: 'Excel' },
+  { formato: 'csv', etiqueta: 'CSV' },
+  { formato: 'pdf', etiqueta: 'PDF' },
+]
 
 function fechaHoyEnTaller() {
   const partes = new Intl.DateTimeFormat('es-AR', {
@@ -47,20 +52,15 @@ function validarFiltros({ desde, hasta, agrupacion }) {
   return null
 }
 
-function etiquetaPeriodo(periodo, agrupacion) {
-  if (agrupacion === 'mes') {
-    return new Intl.DateTimeFormat('es-AR', {
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC',
-    }).format(new Date(`${periodo}-01T00:00:00Z`))
-  }
-  if (agrupacion === 'semana') return `Semana del ${periodo}`
-  return periodo
-}
-
-function grafico(fila, agrupacion) {
-  return { ...fila, etiqueta: etiquetaPeriodo(fila.periodo, agrupacion) }
+function descargarArchivo(blob, nombreArchivo) {
+  const url = URL.createObjectURL(blob)
+  const enlace = document.createElement('a')
+  enlace.href = url
+  enlace.download = nombreArchivo
+  document.body.appendChild(enlace)
+  enlace.click()
+  enlace.remove()
+  URL.revokeObjectURL(url)
 }
 
 function ReporteVentasPorPeriodoPage() {
@@ -70,6 +70,8 @@ function ReporteVentasPorPeriodoPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [errorForm, setErrorForm] = useState(null)
+  const [errorExportacion, setErrorExportacion] = useState(null)
+  const [exportando, setExportando] = useState(null)
 
   useEffect(() => {
     let cancelado = false
@@ -107,11 +109,32 @@ function ReporteVentasPorPeriodoPage() {
       return
     }
     setErrorForm(null)
+    setErrorExportacion(null)
     setCargando(true)
     setFiltrosAplicados({ ...filtros })
   }
 
-  const filasGrafico = reporte ? reporte.filas.map((fila) => grafico(fila, reporte.agrupacion)) : []
+  const exportar = async (formato) => {
+    setExportando(formato)
+    setErrorExportacion(null)
+    try {
+      const { blob, nombreArchivo } = await reportesService.exportar({
+        reporte: 'ventas-por-periodo',
+        formato,
+        ...filtrosAplicados,
+      })
+      descargarArchivo(
+        blob,
+        nombreArchivo
+          || `ventas-por-periodo_${filtrosAplicados.desde}_${filtrosAplicados.hasta}.${formato}`,
+      )
+    } catch (err) {
+      setErrorExportacion(err.message)
+    } finally {
+      setExportando(null)
+    }
+  }
+
   const totalFilas = reporte?.filas.length ?? 0
 
   return (
@@ -127,6 +150,7 @@ function ReporteVentasPorPeriodoPage() {
 
       {error && <div className="banner banner-error">{error}</div>}
       {errorForm && <div className="banner banner-error">{errorForm}</div>}
+      {errorExportacion && <div className="banner banner-error">{errorExportacion}</div>}
 
       <form className="toolbar toolbar-auditoria" onSubmit={aplicarFiltros}>
         <div className="toolbar-grupo">
@@ -156,6 +180,21 @@ function ReporteVentasPorPeriodoPage() {
 
       {reporte && !error && (
         <>
+          <div className="reporte-exportacion">
+            <span>Descargar el reporte con estos filtros:</span>
+            {FORMATOS_EXPORTACION.map(({ formato, etiqueta }) => (
+              <button
+                key={formato}
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => exportar(formato)}
+                disabled={cargando || exportando !== null}
+              >
+                {exportando === formato ? 'Generando...' : etiqueta}
+              </button>
+            ))}
+          </div>
+
           <div className="card reporte-grafico">
             <div className="reporte-grafico-titulo">
               <h2>Total vendido por {reporte.agrupacion === 'dia' ? 'día' : reporte.agrupacion === 'semana' ? 'semana' : 'mes'}</h2>
@@ -164,7 +203,7 @@ function ReporteVentasPorPeriodoPage() {
               </span>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={filasGrafico} margin={{ top: 16, right: 16, bottom: 8, left: 8 }}>
+              <BarChart data={reporte.filas} margin={{ top: 16, right: 16, bottom: 8, left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="etiqueta" tick={{ fontSize: 11 }} minTickGap={24} />
                 <YAxis
@@ -193,7 +232,7 @@ function ReporteVentasPorPeriodoPage() {
                 <tbody>
                   {reporte.filas.map((fila) => (
                     <tr key={fila.periodo}>
-                      <td>{etiquetaPeriodo(fila.periodo, reporte.agrupacion)}</td>
+                      <td>{fila.etiqueta}</td>
                       <td className="reporte-numero">$ {formatoNumero(fila.totalVendido)}</td>
                       <td className="reporte-numero">{fila.cantidadVentas}</td>
                       <td className="reporte-numero">$ {formatoNumero(fila.ticketPromedio)}</td>

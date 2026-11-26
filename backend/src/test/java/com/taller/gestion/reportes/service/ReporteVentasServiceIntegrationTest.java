@@ -95,6 +95,7 @@ class ReporteVentasServiceIntegrationTest {
         assertThat(reporte.filas()).hasSize(31); // octubre completo, incluidos los días sin ventas
 
         VentasPorPeriodoFilaDTO primero = fila(reporte, "2026-10-01");
+        assertThat(primero.etiqueta()).isEqualTo("2026-10-01");
         assertThat(primero.totalVendido()).isEqualByComparingTo("150.00");
         assertThat(primero.cantidadVentas()).isEqualTo(2);
         assertThat(primero.ticketPromedio()).isEqualByComparingTo("75.00");
@@ -126,6 +127,8 @@ class ReporteVentasServiceIntegrationTest {
         assertThat(lunesPrimeraSemana).isEqualTo("2026-09-28");
 
         assertThat(reporte.filas()).hasSize(5);
+        assertThat(fila(reporte, lunesPrimeraSemana).etiqueta())
+                .isEqualTo("Semana del " + lunesPrimeraSemana);
         assertThat(fila(reporte, lunesPrimeraSemana).totalVendido())
                 .isEqualByComparingTo("350.00"); // 01 (150) y 03 (200); la anulada del 02 no cuenta
         assertThat(fila(reporte, "2026-10-05").totalVendido()).isEqualByComparingTo("300.00");
@@ -147,6 +150,7 @@ class ReporteVentasServiceIntegrationTest {
         assertThat(reporte.filas()).hasSize(1);
         VentasPorPeriodoFilaDTO octubre = reporte.filas().get(0);
         assertThat(octubre.periodo()).isEqualTo("2026-10");
+        assertThat(octubre.etiqueta()).isEqualTo("oct 2026");
         assertThat(octubre.totalVendido()).isEqualByComparingTo("800.00");
         assertThat(octubre.cantidadVentas()).isEqualTo(5);
         assertThat(octubre.ticketPromedio()).isEqualByComparingTo("160.00");
