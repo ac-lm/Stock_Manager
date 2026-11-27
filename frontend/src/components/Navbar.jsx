@@ -22,7 +22,8 @@ const LINKS_ADMIN = [
   { to: '/costos', label: 'Costos' },
   { to: '/usuarios', label: 'Usuarios' },
   { to: '/auditoria', label: 'Auditoría' },
-  { to: '/reportes/ventas-por-periodo', label: 'Reportes' },
+  { to: '/reportes/ventas-por-periodo', label: 'Ventas por período' },
+  { to: '/reportes/ventas-por-producto', label: 'Ventas por producto' },
 ]
 
 const ROLES = {

@@ -10,7 +10,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | --- | --- | --- | --- |
 | REP-01 | Ventas por período | VEN-01 | ✅ |
 | REP-02 | Exportar un reporte a Excel, CSV y PDF | REP-01 | ✅ |
-| REP-03 | Ventas por producto y productos más vendidos | REP-01 | Listo para empezar |
+| REP-03 | Ventas por producto y productos más vendidos | REP-01 | ✅ |
 | REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | Listo para empezar |
 | REP-05 | Ventas por vendedor | REP-01 | Listo para empezar |
 | REP-06 | Evolución de ventas y comparación estacional | REP-01 | Listo para empezar |
@@ -77,15 +77,19 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 **Bloqueado por:** 01: Ventas por período
 
 **Criterios de aceptación**
-- [ ] Filtros: rango de fechas (obligatorio), producto y categoría.
-- [ ] Cada fila muestra producto, categoría, unidad de venta, cantidad vendida y total vendido.
-- [ ] El total vendido sale de la suma de Detalle_Venta.subtotal de las ventas confirmadas, no del precio actual del catálogo.
-- [ ] Las cantidades se suman solo dentro de la misma unidad: nunca se suman unidades con kilos.
-- [ ] Se puede ver el total separado entre productos que se venden por unidad y por peso.
-- [ ] Ranking de los N más vendidos por total vendido (N elegible, por defecto 10), con gráfico de barras horizontales.
-- [ ] Exporta con lo de REP-02.
+- [x] Filtros: rango de fechas (obligatorio), producto y categoría.
+- [x] Cada fila muestra producto, categoría, cantidad vendida y total vendido (sin unidad de venta; ver pendiente abajo).
+- [x] El total vendido sale de la suma de Detalle_Venta.subtotal de las ventas confirmadas, no del precio actual del catálogo.
+- [ ] Las cantidades se suman solo dentro de la misma unidad: nunca se suman unidades con kilos. **Pendiente:** no existe el campo de unidad de venta (ver decisión abajo).
+- [ ] Se puede ver el total separado entre productos que se venden por unidad y por peso. **Pendiente:** idem.
+- [x] Ranking de los N más vendidos por total vendido (N elegible, por defecto 10), con gráfico de barras horizontales.
+- [x] Exporta con lo de REP-02.
 
-**Tablas:** Detalle_Venta, Venta, Producto, Categoria (solo lectura)
+**Decisiones aplicadas:** la categoría se toma de `Producto.categoria` (no hay entidad ni tabla Categoría). El ranking ordena por total vendido y desempata por nombre; el tope N lo elige el usuario en la pantalla (5, 10, 20 o 50; por defecto 10) y no achica la tabla, que muestra todos los productos con ventas. La exportación genera la tabla completa con el contrato de REP-02; el ranking es un subconjunto ordenado de esas mismas filas y se describe en el encabezado del archivo (`Top N por total vendido`). Identificador de exportación: `ventas-por-producto`.
+
+**Pendiente documentado (unidad de venta):** el ticket pedía mostrar la unidad de venta y separar los totales entre productos que se venden por unidad y por peso. Hoy `Producto` no tiene un campo `unidad_venta`: la decisión de negocio dice que cada producto se vende de una sola forma, pero ese dato nunca se guardó en la base. Por decisión de Mayra (26/11/2026) se omite ese desglose en esta entrega y queda pendiente hasta que Catálogo agregue la columna con su migración. No se infiere de los decimales de `Detalle_Venta.cantidad`, porque un kilo vendido en número entero daría un resultado falso.
+
+**Tablas:** Detalle_Venta, Venta, Producto (solo lectura). No hay tabla Categoría: la categoría es `Producto.categoria`.
 
 ---
 

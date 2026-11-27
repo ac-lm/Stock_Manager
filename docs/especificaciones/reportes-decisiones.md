@@ -62,7 +62,7 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 1. **Ventas anuladas no cuentan.** Solo `estado = confirmada`. Ya estaba visto en el cuestionario.
 2. **Se cuenta por la fecha de la venta, con su estado de hoy.** Si una venta de octubre se anula en noviembre, el reporte de ventas de octubre baja. Esto es distinto de la caja: en el cierre de octubre esa plata entró, y la devolución sale en la sesión de noviembre. Por eso **"total vendido" y "cobrado en caja" no siempre coinciden**, y está bien.
 3. **Rango de fechas inclusivo:** "del 1/10 al 31/10" incluye todo el 31. En la consulta: `fecha >= desde AND fecha < hasta + 1 día`.
-4. **Pesos sí se suman; cantidades solo dentro de la misma unidad.** 3 frascos + 2 kg no da 5 de nada. Los reportes que muestran cantidades agrupan también por unidad de venta (de ahí salen "ventas por unidad" y "ventas por peso" del PDF).
+4. **Pesos sí se suman; cantidades solo dentro de la misma unidad.** 3 frascos + 2 kg no da 5 de nada. Los reportes que muestran cantidades agrupan también por unidad de venta (de ahí salen "ventas por unidad" y "ventas por peso" del PDF). **Pendiente en REP-03:** hoy `Producto` no guarda la unidad de venta, así que ese reporte muestra la cantidad por producto sin desglosar unidad/peso; no se infiere de los decimales de `cantidad` porque un kilo entero daría un resultado falso. Ver el pendiente documentado en el ticket.
 5. **Los montos ya vienen calculados en la venta.** Se suma `Venta.total` (o `Detalle_Venta.subtotal` cuando se agrupa por producto), nunca se recalcula con el precio actual del catálogo.
 6. **Por producto se suma desde las líneas.** Si algún día se aprueba el descuento sobre el total de la venta (Ventas 3), la suma de las líneas va a dar más que `Venta.total`. Mientras ese descuento sea 0 coinciden; cuando se apruebe hay que decidir cómo se reparte (ver preguntas abiertas).
 7. **Meses sin datos aparecen en 0**, así los gráficos de evolución no saltan meses. Se completa en Java, no con funciones especiales de Postgres.
@@ -75,7 +75,7 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 | Reporte | Lee de | Filtros además de fechas | Gráfico | Ticket | Estado |
 | --- | --- | --- | --- | --- | --- |
 | Ventas por período (total vendido, cantidad de ventas, ticket promedio) | Venta | agrupar por día/semana/mes | barras | REP-01 | Listo |
-| Ventas por producto, cantidades, por unidad y por peso, más vendidos | Detalle_Venta, Producto, Categoria | producto, categoría | barras horizontales (top N) | REP-03 | Listo |
+| Ventas por producto, cantidades y más vendidos (sin desglose unidad/peso, pendiente) | Detalle_Venta, Producto | producto, categoría | barras horizontales (top N) | REP-03 | Listo |
 | Ventas por cliente y por tipo de cliente | Venta, Cliente | cliente, tipo de cliente | barras | REP-04 | Listo |
 | Ventas por vendedor | Venta, Usuario | vendedor | barras | REP-05 | Listo (vendedor = quien registra) |
 | Evolución temporal y comparación estacional | Venta | producto, categoría | líneas (una por año) | REP-06 | Listo |
@@ -97,7 +97,8 @@ total vendido        = SUMA(Venta.total)            de ventas confirmadas en el 
 cantidad de ventas   = CONTAR(Venta)                 confirmadas en el rango
 ticket promedio      = total vendido / cantidad de ventas      (0 si no hubo ventas)
 vendido por producto = SUMA(Detalle_Venta.subtotal)  de líneas de ventas confirmadas
-cantidad vendida     = SUMA(Detalle_Venta.cantidad)  agrupada por producto y unidad
+cantidad vendida     = SUMA(Detalle_Venta.cantidad)  agrupada por producto
+                       (y por unidad cuando exista Producto.unidad_venta; hoy no existe, ver REP-03)
 resultado            = total vendido del período − total de costos del período
 ```
 

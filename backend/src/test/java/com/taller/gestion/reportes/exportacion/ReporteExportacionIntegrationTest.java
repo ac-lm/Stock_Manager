@@ -24,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -83,10 +84,11 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
-    private void guardarVenta(LocalDate fecha, String estado, String total) {
-        jdbcTemplate.update(
+    private long guardarVenta(LocalDate fecha, String estado, String total) {
+        return jdbcTemplate.queryForObject(
                 "INSERT INTO Venta (id_cliente, id_vendedor, fecha, hora, total, estado) "
-                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                        + "VALUES (?, ?, ?, ?, ?, ?) RETURNING id_venta",
+                Long.class,
                 2L, 5L, Date.valueOf(fecha), Time.valueOf(LocalTime.of(10, 30)),
                 new BigDecimal(total), estado);
     }
@@ -144,6 +146,57 @@ class ReporteExportacionIntegrationTest {
             assertThat(texto).describedAs("total en " + extension).contains(
                     formateadorValores.formatear(
                             pantalla.totales().totalVendido(), TipoDatoExportable.DECIMAL));
+        }
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("REP-03: los tres archivos usan la misma consulta y los filtros del reporte")
+    void exportarVentasPorProducto() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Producto (id_producto, nombre, precio, stock_actual, categoria) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                1L, "Café en grano", new BigDecimal("999.99"), new BigDecimal("10.000"), "Bebidas");
+        long venta = guardarVenta(LocalDate.of(2026, 10, 1), "CONFIRMADA", "150.00");
+        jdbcTemplate.update(
+                "INSERT INTO Detalle_Venta (id_venta_fk, id_producto_fk, cantidad, "
+                        + "precio_historico, subtotal) VALUES (?, ?, ?, ?, ?)",
+                venta, 1L, new BigDecimal("3.000"), new BigDecimal("999.99"),
+                new BigDecimal("150.00"));
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "ventas-por-producto")
+                            .param("formato", extension)
+                            .param("desde", "2026-10-01")
+                            .param("hasta", "2026-10-03")
+                            .param("categoria", "Bebidas")
+                            .param("top", "5"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"ventas-por-producto_2026-10-01_2026-10-03."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Ventas por producto")
+                    .contains("Desde: 2026-10-01")
+                    .contains("Hasta: 2026-10-03")
+                    .contains("Categoría: Bebidas")
+                    .contains("Top 5 por total vendido")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    .contains("Producto")
+                    .contains("Cantidad vendida")
+                    .contains("Café en grano")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("150.00"), TipoDatoExportable.DECIMAL))
+                    .contains("Totales");
         }
     }
 
