@@ -18,7 +18,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-08 | Stock actual y productos bajo mínimo | REP-01 | ✅ |
 | REP-09 | Entradas, salidas y descartes de stock | REP-01 | ✅ |
 | REP-10 | Costos por tipo y su evolución | REP-01 | ✅ |
-| REP-11 | Resultado del período (ventas menos costos) | REP-01, REP-10 | 🔒 Falta decisión de Mayra sobre REP-11 |
+| REP-11 | Resultado del período (ventas menos costos) | REP-01, REP-10 | ✅ |
 | REP-12 | Producción: productos elaborados y consumo de insumos | REP-01 | 🔒 Falta respuesta |
 | REP-13 | Incidencias y descartes | REP-01 | 🔒 Falta respuesta |
 | REP-14 | Facturación | REP-01 | 🔒 Falta respuesta |
@@ -261,22 +261,28 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 ---
 
-## REP-11. Resultado del período (ventas menos costos) 🔒
+## REP-11. Resultado del período (ventas menos costos) ✅
 
 **Qué construir:** el administrador ve, mes a mes, el total vendido, el total de costos y la diferencia entre los dos.
 
 **Bloqueado por:** 01: Ventas por período; 10: Costos por tipo y su evolución
 
-**Respuesta de Costos recibida:** la pregunta 4 (período) quedó respondida en [04-costos-res.md](../costos/04-costos-res.md) e implementada con `periodo_mes` y `periodo_anio`; REP‑10 ya está listo con el rango en meses y sin `fecha_pago`, y REP‑11 espera la decisión de Mayra para usar la misma consulta de costos.
+**Respuesta de Costos recibida:** la pregunta 4 (período) quedó respondida en [04-costos-res.md](../costos/04-costos-res.md) e implementada con `periodo_mes` y `periodo_anio`; REP‑10 ya está listo con el rango en meses y sin `fecha_pago`, y REP‑11 reutiliza esa misma consulta.
+
+**Decisiones de Mayra confirmadas el 27/11/2026 (las 7 recomendaciones):** (1) el rango `AAAA-MM` a `AAAA-MM` es obligatorio e inclusivo, con tope de 36 meses y años 2000–2100; las ventas cuentan por su fecha de venta y los costos por `periodo_anio`/`periodo_mes`, sin `fecha_pago`. (2) No hay filtro de tipo de costo: entran todos, sin distinción. (3) La tabla incluye todos los meses del rango, con 0 en los vacíos. (4) El resultado negativo se muestra con signo y en rojo, sin recortarlo a 0. (5) Las columnas son `Período | Total vendido | Total costos | Resultado`, con una fila `Totales`; el gráfico combinado dibuja dos barras (vendido y costos) y una línea (resultado) sobre el mismo eje y meses. (6) La pantalla aclara que es un resultado simple, no un balance contable (no considera stock sin vender ni amortizaciones), y repite el aviso de que la evolución real de `Insumos` espera a `CST-06`. (7) La exportación reutiliza REP‑02 con id `resultado-periodo`, nombre `resultado-periodo_<desde>_<hasta>.<ext>` y la tabla sin gráfico. Solo administradores se hereda de `/api/reportes/**`.
 
 **Criterios de aceptación**
-- [ ] Por cada mes: total vendido (ventas confirmadas), total de costos y resultado = vendido − costos.
-- [ ] Gráfico de barras vendido contra costos, con una línea del resultado.
-- [ ] La pantalla aclara que es un resultado simple, no un balance contable.
-- [ ] Usa las mismas consultas que REP-01 y REP-10 para que los números coincidan con esos reportes.
-- [ ] Exporta con lo de REP-02.
+- [x] Por cada mes: total vendido (ventas confirmadas), total de costos y resultado = vendido − costos.
+- [x] Rango `AAAA-MM` obligatorio e inclusivo, tope de 36 meses y años 2000–2100; ventas por fecha de venta y costos por `periodo_anio`/`periodo_mes`, sin `fecha_pago`.
+- [x] Sin filtro de tipo de costo; meses vacíos en 0.
+- [x] Resultado negativo con signo y en rojo, sin recortar.
+- [x] Gráfico combinado: barras de vendido y costos, línea de resultado, mismo eje y meses.
+- [x] Aviso de resultado simple, no balance contable, y aviso de `Insumos`/`CST-06`.
+- [x] Usa los servicios de REP-01 y REP-10 para que los números coincidan con esos reportes.
+- [x] Exporta con REP-02 (Excel, CSV y PDF) con los mismos filtros; la tabla no incluye el gráfico.
+- [x] Solo administradores (backend 401 sin sesión y 403 para otros roles).
 
-**Tablas:** Venta, Costo (solo lectura)
+**Tablas:** `Venta` y `Costo` (solo lectura, a través de los servicios de REP‑01 y REP‑10). Sin tablas nuevas; no se modificaron los módulos Ventas, Costos ni Stock.
 
 ---
 

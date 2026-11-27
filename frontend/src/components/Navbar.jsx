@@ -58,6 +58,10 @@ const MENUS = [
         to: '/reportes/costos-por-tipo',
         label: 'Costos por tipo y evolución',
       },
+      {
+        to: '/reportes/resultado-periodo',
+        label: 'Resultado del período',
+      },
     ],
   },
   {

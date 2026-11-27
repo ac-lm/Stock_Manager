@@ -24,6 +24,7 @@ import ReporteCierresCajaPage from './pages/ReporteCierresCajaPage'
 import ReporteStockActualPage from './pages/ReporteStockActualPage'
 import ReporteMovimientosStockPage from './pages/ReporteMovimientosStockPage'
 import ReporteCostosPorTipoPage from './pages/ReporteCostosPorTipoPage'
+import ReporteResultadoPeriodoPage from './pages/ReporteResultadoPeriodoPage'
 import UsuariosPage from './pages/UsuariosPage'
 import VentasPage from './pages/VentasPage'
 import './styles/App.css'
@@ -92,6 +93,10 @@ function AppShell() {
               <Route
                 path="/reportes/costos-por-tipo"
                 element={<ReporteCostosPorTipoPage />}
+              />
+              <Route
+                path="/reportes/resultado-periodo"
+                element={<ReporteResultadoPeriodoPage />}
               />
             </Route>
           </Route>

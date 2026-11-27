@@ -101,6 +101,11 @@ export const reportesService = {
   costosPorTipo: (filtros) =>
     api.get(`${REPORTES}/costos-por-tipo?${paramsCostosPorTipo(filtros)}`),
 
+  resultadoPeriodo: (filtros) => {
+    const params = new URLSearchParams({ desde: filtros.desde, hasta: filtros.hasta })
+    return api.get(`${REPORTES}/resultado-periodo?${params.toString()}`)
+  },
+
   exportar: ({ reporte, formato, ...filtros }) => {
     const params = new URLSearchParams({ reporte, formato, ...filtros })
     return api.getBlob(`${REPORTES}/exportar?${params.toString()}`)
