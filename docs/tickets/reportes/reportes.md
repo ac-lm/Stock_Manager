@@ -16,7 +16,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-06 | Evolución de ventas y comparación estacional | REP-01 | ✅ |
 | REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | ✅ |
 | REP-08 | Stock actual y productos bajo mínimo | REP-01 | ✅ |
-| REP-09 | Entradas, salidas y descartes de stock | REP-01 | 🔒 Falta respuesta |
+| REP-09 | Entradas, salidas y descartes de stock | REP-01 | ✅ |
 | REP-10 | Costos por tipo y su evolución | REP-01 | 🔒 Falta respuesta |
 | REP-11 | Resultado del período (ventas menos costos) | REP-01, REP-10 | 🔒 Falta respuesta |
 | REP-12 | Producción: productos elaborados y consumo de insumos | REP-01 | 🔒 Falta respuesta |
@@ -207,23 +207,33 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 ---
 
-## REP-09. Entradas, salidas y descartes de stock 🔒
+## REP-09. Entradas, salidas y descartes de stock ✅
 
 **Qué construir:** el administrador ve en un período qué entró al stock (ingresos de mercadería), qué salió por ventas y qué salió por descarte, pérdida o ajuste.
 
 **Bloqueado por:** 01: Ventas por período
 
-**Espera respuesta a:** Cuestionario 06 de Stock
+**Respuesta de Stock recibida el 27/11/2026 y decisiones de Mayra confirmadas el 27/11/2026 (abajo).**
 
 **Criterios de aceptación**
-- [ ] (A confirmar con el módulo Stock) Tablas y tipos de movimiento.
-- [ ] Filtros: rango de fechas (obligatorio), artículo, tipo de movimiento y proveedor.
-- [ ] Cada fila muestra artículo, unidad y cantidades de entradas, salidas por venta, descartes y ajustes.
-- [ ] Las cantidades se suman solo dentro de la misma unidad.
-- [ ] Gráfico de barras apiladas por tipo de movimiento.
-- [ ] Exporta con lo de REP-02.
+- [x] Tablas y tipos de movimiento: `Movimiento_Stock` (`ENTRADA`/`SALIDA`, con `motivo` `INICIAL`/`COMPRA`/`AJUSTE`/`MERMA`/`DEVOLUCION`).
+- [x] Filtros: rango de fechas (obligatorio), artículo (producto o insumo), tipo de movimiento (`ENTRADA`/`SALIDA`) y proveedor.
+- [x] Cada fila muestra artículo, unidad, entradas, salidas por venta, descartes, ajustes y la 5.ª columna "otras salidas".
+- [x] Las cantidades se suman solo dentro de la misma unidad; los totales solo cuentan artículos y movimientos.
+- [x] Gráfico de barras apiladas por artículo, con las 5 series de movimiento.
+- [x] Exporta con lo de REP-02 (Excel, CSV y PDF, con los mismos filtros).
+- [x] Solo administradores: el backend responde 403 al vendedor.
+- [x] La pantalla avisa que las salidas por venta aparecerán cuando se implemente VEN-10.
 
-**Tablas:** (a definir por Stock)
+**Respuesta de Stock (revisión solo lectura, 27/11/2026):** la tabla es `Movimiento_Stock` (`MovimientoStock.java:31-79`). Cada fila afecta **exactamente un** producto o un insumo (`id_producto` / `id_insumo`, uno de los dos), con `tipo` = `ENTRADA` o `SALIDA` (`TipoMovimientoStock.java`), `cantidad` positiva con 3 decimales, `motivo` ∈ `INICIAL`, `COMPRA`, `AJUSTE`, `MERMA`, `DEVOLUCION` (`MotivoMovimientoStock.java`), `id_usuario`, `fecha_hora` (`LocalDateTime`, sin zona), `observaciones`, `id_venta` y `id_ingreso_mercaderia` (ambos nullable). Los movimientos son **inmutables**: no tienen estado ni flag de anulación; las correcciones se registran como otro movimiento. `INICIAL` se genera automáticamente al dar de alta un producto o insumo con stock (`ProductoService.java:68-73`, `InsumoService.java:69-74`). `fecha_hora` se escribe con `LocalDateTime.now()` en la zona por defecto del servidor (`StockService.java:141`), no con el `Clock` del taller.
+
+**Cómo se distingue una salida por venta de un descarte o ajuste:** no hay motivo `VENTA`. La única marca de venta es la FK `id_venta` (reservada para `VEN-10`, hoy 🔴 pendiente), que actualmente solo usan las devoluciones por anulación: `devolverStockDeVenta` busca `SALIDA` con `id_venta` y genera una `ENTRADA`/`DEVOLUCION` por cada una (`StockService.java:171-188`). Por lo tanto **hoy no se registra ninguna salida por venta**: la columna correspondiente daría 0 hasta que `VEN-10` implemente el descuento. `MERMA` es la pérdida/descarte y `AJUSTE` el ajuste manual, pero `StockService` **no valida combinaciones** de `tipo` y `motivo`: por la API se pueden crear tanto `ENTRADA/AJUSTE` como `SALIDA/COMPRA` o `SALIDA/DEVOLUCION` (`StockController.java:48-76`). El campo `id_ingreso_mercaderia` está reservado para `CST-06` y no hay tabla de ingreso de mercadería; las compras se cargan hoy como `ENTRADA/COMPRA` manuales.
+
+**Proveedor:** `Movimiento_Stock` **no guarda proveedor** (ni columna ni FK). La relación existe en el artículo, no en el movimiento: `Proveedor_Insumo` asocia `Proveedor` con `Insumo` (`ProveedorInsumo.java:22-29`) y `ProveedorInsumoService` evita duplicar el par. Los **productos no tienen proveedor**. Un mismo insumo puede tener varios proveedores, y la relación refleja la asignación vigente, no qué proveedor entregó cada entrada.
+
+**Decisiones aplicadas (Mayra, 27/11/2026):** (1) `entradas` = todas las `ENTRADA` (incluida `INICIAL`); `salidasVenta` = `SALIDA` con `id_venta` (tiene prioridad sobre el motivo; hoy da 0 hasta VEN‑10); `descartes` = `SALIDA`/`MERMA`; `ajustes` = `SALIDA`/`AJUSTE`; la 5.ª columna `otrasSalidas` = el resto de `SALIDA` (por ejemplo `COMPRA` o `DEVOLUCION`). (2) `INICIAL` cuenta como entrada. (3) El filtro "tipo de movimiento" es `ENTRADA`/`SALIDA`, no el motivo. (4) El artículo se elige en un selector combinado con productos e insumos rotulados; una sola fila por artículo y unidad `—` para productos. (5) El proveedor se resuelve por `Proveedor_Insumo` (solo insumos): al elegirlo se ocultan los productos con aviso, `EXISTS` evita duplicar insumos con varios proveedores y no hay columna de proveedor en la tabla. (6) El gráfico apila las 5 series dentro de cada artículo (una barra por artículo, nunca mezcla unidades) y los totales solo informan conteos. (7) El rango es obligatorio sobre `fecha_hora` como fechas de calendario (`>= desde 00:00` y `< hasta + 1 día`, sin conversión de zona); la exportación reutiliza REP‑02 con id `movimientos-stock`, archivo `movimientos-stock_<desde>_<hasta>.<ext>`, tabla sin gráfico y el aviso de VEN‑10 en el encabezado.
+
+**Tablas:** `Movimiento_Stock`, `Producto`, `Insumo`, `Venta` (solo `id_venta`), `Proveedor` y `Proveedor_Insumo` (solo lectura). No se agregaron tablas ni columnas; no se modificaron los módulos Stock ni Ventas.
 
 ---
 

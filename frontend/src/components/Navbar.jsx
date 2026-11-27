@@ -50,6 +50,10 @@ const MENUS = [
       { to: '/reportes/evolucion-ventas', label: 'Evolución de ventas' },
       { to: '/reportes/cierres-caja', label: 'Cierres de caja' },
       { to: '/reportes/stock-actual', label: 'Stock actual y bajo mínimo' },
+      {
+        to: '/reportes/movimientos-stock',
+        label: 'Entradas, salidas y descartes',
+      },
     ],
   },
   {

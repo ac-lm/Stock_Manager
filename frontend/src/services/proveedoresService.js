@@ -8,4 +8,5 @@ export const proveedoresService = {
   crear: (dto) => api.post(PROVEEDORES, dto),
   actualizar: (id_proveedor, dto) => api.put(`${PROVEEDORES}/${id_proveedor}`, dto),
   eliminar: (id_proveedor) => api.delete(`${PROVEEDORES}/${id_proveedor}`),
+  listarInsumos: (id_proveedor) => api.get(`${PROVEEDORES}/${id_proveedor}/insumos`),
 }

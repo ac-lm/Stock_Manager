@@ -51,6 +51,22 @@ function paramsStockActual({ tipo, categoria, solo_bajo_minimo }) {
   return params.toString()
 }
 
+function paramsMovimientosStock({
+  desde,
+  hasta,
+  tipo_articulo,
+  id_articulo,
+  tipo_movimiento,
+  id_proveedor,
+}) {
+  const params = new URLSearchParams({ desde, hasta })
+  if (tipo_articulo && tipo_articulo !== 'TODOS') params.set('tipo_articulo', tipo_articulo)
+  if (id_articulo) params.set('id_articulo', id_articulo)
+  if (tipo_movimiento && tipo_movimiento !== 'TODOS') params.set('tipo_movimiento', tipo_movimiento)
+  if (id_proveedor) params.set('id_proveedor', id_proveedor)
+  return params.toString()
+}
+
 export const reportesService = {
   ventasPorPeriodo: (filtros) =>
     api.get(`${REPORTES}/ventas-por-periodo?${paramsVentasPorPeriodo(filtros)}`),
@@ -72,6 +88,9 @@ export const reportesService = {
 
   stockActual: (filtros) =>
     api.get(`${REPORTES}/stock-actual?${paramsStockActual(filtros)}`),
+
+  movimientosStock: (filtros) =>
+    api.get(`${REPORTES}/movimientos-stock?${paramsMovimientosStock(filtros)}`),
 
   exportar: ({ reporte, formato, ...filtros }) => {
     const params = new URLSearchParams({ reporte, formato, ...filtros })

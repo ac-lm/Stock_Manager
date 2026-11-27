@@ -508,6 +508,94 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @Transactional
+    @DisplayName("REP-09: la descarga usa la misma tabla y los filtros de la pantalla")
+    void exportarMovimientosStock() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Usuario (id_usuario, nombre, email, password, rol, activo) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                501L, "Ana Stock", "anaStock@taller.local", "hash", "ADMINISTRADOR", true);
+        jdbcTemplate.update(
+                "INSERT INTO Producto (id_producto, nombre, precio, stock_actual, categoria) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                501L, "Café", new BigDecimal("10.00"), new BigDecimal("4.000"), "Bebidas");
+        jdbcTemplate.update(
+                "INSERT INTO Insumo (id_insumo, nombre, stock_actual, unidad_medida, "
+                        + "stock_minimo, costo) VALUES (?, ?, ?, ?, ?, ?)",
+                501L, "Harina", new BigDecimal("3.000"), "kg", 1, new BigDecimal("1.00"));
+        jdbcTemplate.update(
+                "INSERT INTO Proveedor (id_proveedor, nombre, CUIT, telefono, email, tipo_producto) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                501L, "Proveedor A", "20-501-1", "555", "prov501@taller.local", "Insumos");
+        jdbcTemplate.update(
+                "INSERT INTO Proveedor_Insumo (id_proveedor_insumo, id_proveedor, id_insumo) "
+                        + "VALUES (?, ?, ?)",
+                501L, 501L, 501L);
+        jdbcTemplate.update(
+                "INSERT INTO Movimiento_Stock (id_movimiento_stock, id_producto, id_insumo, "
+                        + "tipo, cantidad, motivo, id_usuario, fecha_hora, id_venta) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                501L, 501L, null, "ENTRADA", new BigDecimal("4.000"), "COMPRA", 501L,
+                java.sql.Timestamp.valueOf("2026-10-01 09:00:00"), null);
+        jdbcTemplate.update(
+                "INSERT INTO Movimiento_Stock (id_movimiento_stock, id_producto, id_insumo, "
+                        + "tipo, cantidad, motivo, id_usuario, fecha_hora, id_venta) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                502L, null, 501L, "ENTRADA", new BigDecimal("3.000"), "COMPRA", 501L,
+                java.sql.Timestamp.valueOf("2026-10-02 09:00:00"), null);
+        jdbcTemplate.update(
+                "INSERT INTO Movimiento_Stock (id_movimiento_stock, id_producto, id_insumo, "
+                        + "tipo, cantidad, motivo, id_usuario, fecha_hora, id_venta) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                503L, null, 501L, "SALIDA", new BigDecimal("1.000"), "MERMA", 501L,
+                java.sql.Timestamp.valueOf("2026-10-03 17:00:00"), null);
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "movimientos-stock")
+                            .param("formato", extension)
+                            .param("desde", "2026-10-01")
+                            .param("hasta", "2026-10-31")
+                            .param("tipo_articulo", "INSUMO")
+                            .param("id_proveedor", "501"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"movimientos-stock_2026-10-01_2026-10-31."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Reporte de entradas, salidas y descartes de stock")
+                    .contains("Desde: 2026-10-01")
+                    .contains("Hasta: 2026-10-31")
+                    .contains("Tipo de artículo: INSUMO")
+                    .contains("Proveedor: #501")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    .contains("Artículo")
+                    .contains("Unidad")
+                    .contains("Entradas")
+                    .contains("Salidas por venta")
+                    .contains("Descartes")
+                    .contains("Ajustes")
+                    .contains("Otras salidas")
+                    .contains("Harina")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("3.000"), TipoDatoExportable.DECIMAL))
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("1.000"), TipoDatoExportable.DECIMAL))
+                    .contains("VEN-10")
+                    .contains("Totales")
+                    .doesNotContain("Café");
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {
