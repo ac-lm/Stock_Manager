@@ -40,5 +40,5 @@ documentados en Swagger para probarlos y entenderlos sin leer el código.
 
 ## Notas
 
-- El estado ✅ es para el alcance actual. Cuando se conecten `CST-05`, `CST-06` y `CST-08` habrá
-  que documentar los endpoints y campos nuevos.
+- El estado ✅ es para el alcance actual. `CST-05` y `CST-08` no agregaron endpoints nuevos; cuando
+  se desbloquee `CST-06` habrá que documentar los endpoints y campos del módulo de ingresos.

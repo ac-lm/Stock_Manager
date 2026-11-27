@@ -47,7 +47,8 @@ dependencias resueltas.
   de cierres (CAJA-08).
 - **`costos` tiene el backend y la pantalla completos** (modelo, tipos, alta, edición, anulación,
   filtros, totales, tests, Swagger y frontend); la integración con caja (CST-05) ya está hecha y
-  le faltan la integración con ingresos de mercadería (CST-06) y la auditoría de monto (CST-08).
+  la auditoría de monto (CST-08) quedó cubierta por el listener global, con su test. Falta la
+  integración con ingresos de mercadería (CST-06), bloqueada hasta acordarla con Lautaro.
 - **`reportes` va último**: depende de que existan datos de todos los módulos.
 - **`auditoria` es transversal**: conviene dejarla para cuando los módulos principales ya generen eventos.
 

@@ -17,6 +17,12 @@ en orden; **Bloqueado por** indica qué tiene que estar terminado antes.
 - El usuario de alta y el de anulación se toman de la sesión actual, nunca del cuerpo del request.
 - Los totales **nunca** incluyen costos anulados.
 
+> **Pendiente de hablar con el equipo (CST-08):** el listener global compara con `Objects.equals`,
+> pero Hibernate ya iguala `150.0` y `150.00` en el *dirty checking* y no dispara auditoría. La
+> decisión acordada es que un cambio solo de escala **no** cuenta como cambio de monto; queda por
+> decidir si se normaliza la comparación en el listener. No se tocó el listener compartido. Ver
+> [`CST-08`](CST-08-auditoria-de-monto.md).
+
 **Convención de nombres:** los identificadores (`id_costo`, `id_tipo_costo`, `id_usuario`,
 `id_usuario_anulacion`, `id_ingreso_mercaderia`) van en `snake_case`; el resto de campos, métodos y
 claves JSON van en `camelCase`. Las columnas de la base conservan `snake_case` mediante
@@ -36,9 +42,9 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 | [CST-03](CST-03-registro-manual.md) | Registro manual de costos | 01, 02, `USU-01` | ✅ |
 | [CST-04](CST-04-edicion-y-anulacion.md) | Edición y anulación de costos | 03 | ✅ |
 | [CST-05](CST-05-integracion-caja.md) | Integración con caja | 04, módulo `caja` | ✅ |
-| [CST-06](CST-06-costo-desde-ingreso.md) | Costo automático desde el ingreso de mercadería | 01, módulo de ingresos | 🔴 |
+| [CST-06](CST-06-costo-desde-ingreso.md) | Costo automático desde el ingreso de mercadería | 01, módulo de ingresos y acuerdo con Lautaro | 🔴 |
 | [CST-07](CST-07-consultas-y-totales.md) | Consultas, filtros y totales | 03 | ✅ |
-| [CST-08](CST-08-auditoria-de-monto.md) | Auditar cambios de monto | 04 | 🟢 |
+| [CST-08](CST-08-auditoria-de-monto.md) | Auditar cambios de monto | 04 | ✅ |
 | [CST-09](CST-09-tests.md) | Tests del módulo | 03, 04, 07 | ✅ |
 | [CST-10](CST-10-documentacion-swagger.md) | Documentar la API en Swagger | 03, 04, 07 | ✅ |
 | [CST-11](CST-11-frontend-costos.md) | Pantalla de costos | 02, 03, 04, 07 | ✅ |
@@ -52,7 +58,8 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 5. **En paralelo:** `CST-09` y `CST-10`.
 6. `CST-11`.
 7. `CST-08`.
-8. `CST-05` (hecho) y `CST-06` cuando exista el módulo de ingresos de mercadería.
+8. `CST-05` (hecho) y `CST-06` cuando exista el módulo de ingresos de mercadería y se acuerde con
+   Lautaro.
 
 **Camino crítico:** `CST-01 → CST-02 → CST-03 → CST-04 → CST-11`.
 
@@ -62,13 +69,17 @@ Leyenda de estado: ✅ Hecho · 🟡 En curso · 🟢 Listo · 🔴 Bloqueado.
 - `usuario`: `UsuarioService.obtenerAutenticado()` (`USU-01`) para registrar quién carga y anula.
 - PostgreSQL con las tablas `Costo` y `TipoCosto` (se crean/actualizan con Hibernate).
 - Para `CST-05`: módulo `caja` con el vínculo `id_costo` en los egresos (ya disponible).
-- Para `CST-06`: módulo de ingresos de mercadería y stock.
+- Para `CST-06`: módulo de ingresos de mercadería y stock, más el acuerdo con Lautaro sobre las
+  decisiones abiertas 6, 7 y 8 del cuestionario 04.
 
 ## Verificación del módulo
 
 ```bash
 cd backend
 ./mvnw -o test -Dtest='com.taller.gestion.costos.**,UsuarioServiceAutenticadoTest'
+# 73 tests: 70 del módulo costos + 3 de UsuarioServiceAutenticadoTest
+
+./mvnw -o test -Dtest='CostoAuditoriaIntegrationTest'   # CST-08, 2 tests
 ```
 
 Verificación del frontend (pantalla de costos):

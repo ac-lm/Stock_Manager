@@ -109,3 +109,30 @@ módulos, así que se mantuvo el mecanismo existente y la auditoría solo consum
 - `AuditoriaServiceTest`: permisos (401/403), saneado de datos sensibles, actor `SISTEMA` y
   corrección que conserva la fila original.
 - `AuditoriaControllerTest`: rutas, serialización del JSON, código 201 y cuerpo de una corrección.
+- `CostoAuditoriaIntegrationTest` (CST-08): edición de un costo con PostgreSQL 17 y Testcontainers;
+  verifica `MODIFICACION`, `monto.anterior`/`nuevo`, usuario y fecha, y que guardar el mismo monto
+  no agrega otra fila.
+
+## Pendiente de hablar con el equipo: escala de `BigDecimal`
+
+`AuditoriaEntityListener` decide si un campo cambió con `Objects.equals`
+(`AuditoriaEntityListener.java:69`), que en `BigDecimal` compara también la escala. Hibernate ya
+considera iguales `150.0` y `150.00` al hacer *dirty checking* (`BigDecimalJavaType.areEqual` usa
+`compareTo`), así que ese caso no llega al listener y no genera auditoría. La decisión acordada
+para CST-08 es que **un cambio solo de escala no cuenta como cambio**. No se modificó el listener
+compartido: queda pendiente de conversar con el equipo si conviene normalizar la comparación en el
+listener (por ejemplo con `compareTo`) para no depender de Hibernate, sin afectar a los demás
+módulos. El test de CST-08 usa escalas iguales (`150.00 → 175.00`).
+
+## Riesgo pendiente: flush explícito con el listener global
+
+En `CostoAuditoriaIntegrationTest` se probó llamar a `entityManager.flush()` después del `PUT`
+para forzar el `UPDATE` dentro de la transacción del test. El listener consulta el usuario en medio
+del flush y eso modifica la cola de acciones de Hibernate mientras se itera: termina en
+`ConcurrentModificationException` y, según el caso, en `UnexpectedRollbackException`.
+
+El test evita el problema dejando que el `PUT` confirme su propia transacción (igual que en
+producción), preparando usuario, tipo y costo por JDBC y aislando `UsuarioService` con
+`@MockitoBean`. **No se tocó el listener compartido.** Queda como riesgo pendiente a revisar con el
+equipo: cualquier código que haga un flush explícito sobre una entidad auditada puede chocar con el
+listener.
