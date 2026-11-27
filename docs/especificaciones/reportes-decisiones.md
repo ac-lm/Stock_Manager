@@ -84,6 +84,18 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 
 20. **Decisiones de Mayra para REP‑11 (confirmó las 7 recomendaciones, 27/11/2026):** (1) rango `YYYY-MM` a `YYYY-MM` obligatorio e inclusivo, con tope de 36 meses y años 2000–2100; las ventas se agrupan por su fecha de venta (REP‑01, agrupación `MES`, solo confirmadas) y los costos por `periodo_anio`/`periodo_mes` (REP‑10, anulados excluidos, sin `fecha_pago`). (2) No hay filtro de tipo de costo: entran todos los tipos. (3) La tabla incluye todos los meses del rango, con 0 en los que no hay ventas o costos. (4) El resultado puede ser negativo: se muestra con signo y en rojo, sin recortarlo a 0. (5) Columnas `Período | Total vendido | Total costos | Resultado` más fila `Totales`; el gráfico combinado usa las mismas barras de vendido y costos y una línea de resultado sobre el mismo eje y meses. (6) La pantalla aclara que es un resultado simple, no un balance contable (no considera stock sin vender ni amortizaciones), y repite el aviso de que la evolución real de `Insumos` espera a `CST-06`. (7) Exportación REP‑02 con id `resultado-periodo`, archivo `resultado-periodo_<desde>_<hasta>.<ext>` y tabla sin gráfico. Solo administradores se hereda de `/api/reportes/**`. El servicio cruza los DTOs de REP‑01 y REP‑10: no consulta Venta ni Costo por su cuenta y no tocó esos módulos ni Stock.
 
+### REP‑12: relevamiento de Stock (revisión solo lectura 27/11/2026, sin implementar)
+
+**No existe un registro de producción.** No hay entidad, tabla, DTO, endpoint, pantalla ni test que guarde qué producto se elaboró, cuánto se elaboró y qué insumos se consumieron. Lo más parecido es la receta estática `Producto_Insumo` de Catálogo (`ProductoInsumo.java:9-34`, `docs/modelo-datos.md:50-60`): guarda producto, insumo, `cant_necesaria` y `unidad_medida`, pero no fecha, cantidad elaborada, consumo real, lote ni usuario. Es maestro de composición, no un hecho ejecutado.
+
+En Stock, `MovimientoStock.java:42-78` mueve un solo producto **o** un solo insumo por movimiento, con `tipo` `ENTRADA`/`SALIDA`, `motivo`, `cantidad`, `fecha_hora`, `usuario` y `observaciones` (texto libre). `MotivoMovimientoStock.java:8-13` solo tiene `INICIAL`, `COMPRA`, `AJUSTE`, `MERMA`, `DEVOLUCION`: no hay `PRODUCCION`. `StockService.java:93-213` registra un movimiento por vez y actualiza un saldo; no existe carga transaccional que descuente insumos e ingrese el producto, ni `id_produccion` que agrupe esos movimientos. Tampoco hay migraciones SQL/Flyway (`application.properties:6` usa `ddl-auto=update`). `Detalle_Venta`, `Costo`, Caja, Incidencias y Auditoría no registran elaboración.
+
+REP‑09 no puede reemplazarlo: `ReporteMovimientosStockRepository.java:52-73` clasifica entradas, salidas por venta, descartes, ajustes y otras salidas por artículo; sin motivo ni FK de producción no se puede asociar la entrada del producto con las salidas de sus insumos, y `observaciones` no es una clave fiable.
+
+**Qué haría falta:** primero el registro operativo en **Stock** (cabecera con id/fecha/usuario/estado/observaciones; línea del producto elaborado; líneas de insumos consumidos con cantidad efectiva y unidad; vínculo con los `Movimiento_Stock` y servicio transaccional con DTOs, endpoint y pantalla). **Catálogo** aportaría `Producto_Insumo` como plantilla y, si se decide, la versión de receta usada; `Insumo.costo` es un valor vigente, no un costo histórico. **Reportes** recién después agregaría REP‑12 como solo lectura, sin tablas propias (ADR 0004). Falta también cerrar la fuente del esquema (export de Vertabelo / eventual Flyway, `DB-01`).
+
+**Decisiones abiertas para Mayra/el equipo:** (1) si producción es un asiento ejecutado o una orden con estados; (2) si siempre se elabora contra `Producto_Insumo` o se permite consumo libre, y si se guarda la versión de receta; (3) si una producción genera uno o varios productos; (4) si se incluyen lote/partida y unidad de venta (`Producto` hoy no tiene `unidad_venta`); (5) si las correcciones son un nuevo asiento o una anulación; (6) si la carga la hace cualquier autenticado o solo administradores; (7) si se vincula con `Costo`/`CST‑06` o queda solo en cantidades; (8) si las salidas de insumos se identifican con un nuevo motivo de stock o con una FK de producción. Hasta que se respondan, REP‑12 sigue bloqueado.
+
 ## Lista de reportes y de dónde lee cada uno
 
 | Reporte | Lee de | Filtros además de fechas | Gráfico | Ticket | Estado |
@@ -98,7 +110,7 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 | Entradas, salidas y descartes de stock | Movimiento_Stock, Producto, Insumo, Proveedor_Insumo | artículo (producto/insumo), tipo de movimiento, proveedor | barras apiladas por artículo | REP-09 | Listo |
 | Costos por tipo y evolución | Costo, TipoCosto | rango `YYYY-MM` obligatorio, tipo de costo | líneas por tipo | REP-10 | Listo |
 | Resultado del período (ventas − costos) | Venta, Costo (vía REP‑01 y REP‑10) | rango `YYYY-MM` obligatorio, sin tipo de costo | barras vendido vs costos + línea de resultado | REP-11 | Listo |
-| Producción: productos elaborados y consumo de insumos | registro de producción | producto, insumo | barras | REP-12 | 🔒 Stock pregunta 1 |
+| Producción: productos elaborados y consumo de insumos | (hoy no existe; haría falta en Stock) | rango de fechas, producto, insumo | barras por producto | REP-12 | 🔒 Sin registro de producción |
 | Incidencias y descartes | Incidencia, salidas por descarte | producto, tipo, estado | barras por tipo | REP-13 | 🔒 Incidencias |
 | Facturación | (no existe todavía) | — | — | REP-14 | 🔒 Facturación en Ventas |
 
@@ -157,7 +169,7 @@ proveedor            = Proveedor_Insumo del insumo (el movimiento no guarda prov
 | --- | --- | --- |
 | Facturación (ya confirmado que la emite el sistema): ¿factura electrónica de ARCA o comprobante interno? ¿Monotributo o responsable inscripto? ¿Toda venta o solo a pedido? ¿Entra en el alcance de la PPS? **Tiene que decidirlo Ventas (Ivan) y actualizar Ventas 15** | equipo / clienta | REP-14. También cambia Venta y Cliente |
 | ~~Stock: detalle de movimientos (tipos, motivos y proveedor)~~ **Respondido por Stock el 27/11/2026 (decisión 16) y decidido por Mayra el 27/11/2026 (decisión 17)**: clasificación de columnas, `INICIAL` como entrada, filtro `ENTRADA`/`SALIDA`, selector combinado de artículo, proveedor por `Proveedor_Insumo`, agregación por unidad y exportación con rango de fechas | equipo / Mayra | Ninguna: REP-09 listo |
-| Stock 1: ¿hay registro de producción? | equipo / clienta | REP-12 |
+| Stock 1: ¿hay registro de producción? **Respondido por revisión 27/11/2026: no existe**; siguen abiertas las 8 decisiones de modelo/carga del relevamiento de REP‑12 | equipo / clienta | REP-12 |
 | ~~Costos (todo el cuestionario 04), sobre todo 4 (período) y 5 (tipos)~~ **Respondido por el equipo de Costos 27/11/2026 ([04-costos-res.md](../tickets/costos/04-costos-res.md), decisión 18) y decidido por Mayra el 27/11/2026 (decisiones 19 y 20); REP‑10 y REP‑11 listos** | equipo / Mayra | Ninguna para REP-10 ni REP-11 |
 | Incidencias (cuestionario 09): tipos y estados | equipo | REP-13 |
 | Ventas 10: ¿el vendedor puede ser alguien distinto de quien carga la venta? | equipo | REP-05 cambia de columna si es "sí" |

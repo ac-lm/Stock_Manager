@@ -292,16 +292,22 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 **Bloqueado por:** 01: Ventas por período
 
-**Espera respuesta a:** Stock 1: ¿hay registro de producción?
+**Espera respuesta a:** Stock 1: ¿hay registro de producción? **Respondido por revisión solo lectura el 27/11/2026: no existe.** Quedan abiertas las decisiones de modelo y carga que se listan abajo. No se implementó nada de REP‑12.
+
+**Revisión 27/11/2026 (solo lectura):** no hay entidad, tabla, DTO, endpoint, pantalla ni test de producción. En Catálogo existe `Producto_Insumo` (`ProductoInsumo.java:9-34`) como **receta estática**: producto, insumo, `cant_necesaria` y `unidad_medida`; no guarda fecha, usuario, cantidad elaborada, consumo real ni lote (`docs/modelo-datos.md:50-60`). En Stock, `Movimiento_Stock` (`MovimientoStock.java:42-78`) mueve **un solo** producto o insumo por vez con `tipo` `ENTRADA`/`SALIDA` y motivos `INICIAL`, `COMPRA`, `AJUSTE`, `MERMA`, `DEVOLUCION` (`MotivoMovimientoStock.java:8-13`); no hay motivo `PRODUCCION`, FK de producción ni vínculo que agrupe la entrada del producto con las salidas de sus insumos. `StockService.java:93-213` registra un movimiento por vez y actualiza un saldo; no tiene una carga transaccional que descuente insumos e ingrese el producto. Tampoco hay migraciones SQL/Flyway (`application.properties:6` usa `ddl-auto=update`). `Detalle_Venta` guarda lo vendido, `Costo` guarda montos y períodos, y Caja, Incidencias y Auditoría no registran elaboración. REP‑09 no puede reemplazar este registro: una `ENTRADA` de producto y una `SALIDA` de insumo aparecen en artículos distintos, las salidas sin venta/MERMA/AJUSTE caen en “otras salidas” y `observaciones` es texto libre.
+
+**Qué haría falta agregar y dónde:** el hecho operativo pertenece a **Stock**: cabecera de producción (id, fecha/hora, usuario, estado/anulación, observaciones), línea del producto elaborado (producto y cantidad), líneas de insumos consumidos (insumo, cantidad efectiva y unidad) y vinculación con los `Movimiento_Stock` que generan la entrada y las salidas, con servicio transaccional, DTOs, endpoint y pantalla de carga. **Catálogo** aportaría la receta `Producto_Insumo` como plantilla y, si se decide, la versión vigente al producir; `Insumo.costo` no sirve como costo histórico de consumo. **Reportes** recién después agregaría REP‑12 como solo lectura (consulta + DTO + pantalla + REP‑02), sin tablas propias. Como no hay migraciones, también habría que definir la fuente del esquema (export de Vertabelo / eventual Flyway, `DB-01`).
+
+**Decisiones abiertas (para Mayra/el equipo):** (1) ¿producción es un asiento ya ejecutado o una orden con estados (borrador/confirmada/anulada)? (2) ¿siempre contra una receta `Producto_Insumo` o se permite consumo libre, guardando o no la versión usada? (3) ¿una producción genera siempre un producto o varios? (4) ¿se guardan lote/partida y unidad de venta del producto (`Producto` hoy no tiene `unidad_venta`)? (5) ¿las correcciones son un nuevo asiento o una anulación? (6) ¿quién puede cargarla: cualquier autenticado, como los ajustes de Stock, o solo administradores? (7) ¿se vincula económicamente con `Costo`/`CST‑06` o queda solo en cantidades? (8) ¿cómo se clasifican las salidas de insumos: nuevo motivo de stock o FK de producción?
 
 **Criterios de aceptación**
-- [ ] (A confirmar con Stock 1) Que exista un registro de producción; hoy el diagrama no tiene cómo registrar lo que se elabora.
+- [ ] Confirmado por revisión: hoy no existe el registro de producción; REP‑12 queda bloqueado hasta que Stock lo implemente.
 - [ ] Filtros: rango de fechas (obligatorio), producto e insumo.
 - [ ] Tabla de productos elaborados (cantidad por producto) y tabla de insumos consumidos (cantidad por insumo y unidad).
 - [ ] Gráfico de barras por producto.
 - [ ] Exporta con lo de REP-02.
 
-**Tablas:** (a definir por Stock)
+**Tablas:** (a definir por Stock; hoy no existe ninguna tabla de producción)
 
 ---
 
