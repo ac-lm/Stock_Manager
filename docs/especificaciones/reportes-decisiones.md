@@ -31,7 +31,7 @@ flowchart LR
 
 | # | Pregunta | Respuesta | Qué implica |
 | --- | --- | --- | --- |
-| 1 | ¿Qué reportes primero? | a) Ventas por período y por producto, stock actual y bajo mínimo, y cierres de caja | Esos son los primeros tickets. Los de stock quedan bloqueados hasta que se responda el módulo Stock |
+| 1 | ¿Qué reportes primero? | a) Ventas por período y por producto, stock actual y bajo mínimo, y cierres de caja | Esos son los primeros tickets. Stock ya respondió de dónde sale el saldo y el mínimo: REP‑08 está listo; REP‑09 sigue esperando el detalle de movimientos |
 | 2 | ¿Cómo se ven? | a) Tabla con filtros y un gráfico simple (barras o líneas) por reporte | Cada reporte = una pantalla con filtros arriba, gráfico y tabla. Gráficos con Recharts. Sin dashboard en el inicio |
 | 3 | ¿Se exportan? | c) A Excel (o CSV) y a PDF | Cada reporte exporta exactamente lo que se ve con los filtros aplicados |
 | 4 | Filtros | a) Rango de fechas siempre, y según el reporte: producto, categoría, cliente, tipo de cliente, vendedor | El rango de fechas es obligatorio en todos los reportes de movimientos; los demás filtros son opcionales |
@@ -73,6 +73,7 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 12. **Vendedor en REP-05:** es el usuario autenticado que registró la venta (`Venta.id_vendedor`, Ventas 10 opción a). No se filtra por rol: los administradores con ventas también aparecen. Se muestran solo quienes tienen ventas confirmadas en el rango, con ticket promedio por fila y en los totales. La etiqueta es `nombre (ROL)` y lleva además el email cuando dos usuarios del reporte comparten nombre (decisión de Mayra, 27/11/2026). El selector incluye inactivos, marcados como tales.
 13. **Comparación estacional en REP-06:** se comparan el año actual y los dos anteriores por omisión; se pueden elegir de 1 a 5 años, sin repetir, entre 2000 y el año actual (el backend valida y devuelve los años ordenados de menor a mayor). Agrupa con `EXTRACT(YEAR/MONTH)` sobre ventas confirmadas. Sin filtro de producto se suma `Venta.total`; con producto o categoría se suma `Detalle_Venta.subtotal` de las líneas que cumplen, igual que en REP‑03 (la categoría es `Producto.categoria`). Cada año se compara contra el inmediatamente anterior de los seleccionados: `variación = (actual - anterior) / anterior * 100`, con dos decimales; si el anterior vendió 0 se muestra `—` en vez de dividir por cero. Los meses sin ventas se completan en 0 y los meses futuros del año en curso se omiten de la tabla y del gráfico. "Hoy" se toma con un `Clock` en `America/Argentina/Buenos_Aires` (inyectable en tests), la misma zona que usa la pantalla. La exportación reutiliza REP‑02 con el id `evolucion-ventas` y el nombre `evolucion-ventas_<desde>_<hasta>.<ext>`. Decisión de Mayra (27/11/2026).
 14. **Cierres de caja en REP-07:** el período se filtra por `Sesion_Caja.fecha_apertura` (inclusivo, `fecha >= desde AND fecha < hasta + 1 día`) y solo se incluyen `CERRADA` y `PENDIENTE_REVISION`; las `ABIERTA` se excluyen por no tener cierre ni declarado. Esperado, declarado y diferencia son los valores vigentes guardados en `Cierre_Caja_Detalle`, con `diferencia = declarado - esperado` a dos decimales. Ingresos y egresos se suman desde `Movimiento_Caja` por `tipo` y `medio_pago`; las anulaciones están registradas como `EGRESO`/`ANULACION` (ADR 0002), por lo que cuentan como egreso y no se filtra por `Venta.estado`. El monto inicial no es ingreso ni egreso. Faltante = diferencia negativa en valor absoluto; sobrante = diferencia positiva; se totalizan por separado, sin netear. El filtro de usuario es por quien cerró (`id_usuario_cierre`) y su selector incluye inactivos. El filtro de medio de pago acota columnas y totales, sin eliminar sesiones. La exportación usa REP‑02 con id `cierres-caja` y nombre `cierres-caja_<desde>_<hasta>.<ext>`, con tabla y fila de totales pero sin gráfico. Las sesiones pendientes se resaltan en tabla y gráfico. **Pendiente:** la marca de "corregido" espera a CAJA‑08; hoy se muestra el valor vigente y no se infiere corrección desde Auditoría. Decisión de Mayra (27/11/2026).
+15. **Stock actual y bajo mínimo en REP-08:** es una foto de hoy, sin rango de fechas; el día se toma del `Clock` del taller (`America/Argentina/Buenos_Aires`, inyectable en tests). El saldo es la columna `stock_actual` de `Producto`/`Insumo` con `COALESCE(..., 0)`, **no** la suma de `Movimiento_Stock`: `StockService` es el único escritor, los movimientos son inmutables y no hay reconciliación entre saldo y movimientos. `Insumo.stock_minimo` es obligatorio en el modelo, pero si llegara `null` se usa `0`, igual que `StockService`; "bajo mínimo" es `stock < mínimo` estricto. `Producto` no tiene mínimo ni unidad: se muestra `—`/N/A, nunca se marca como "bajo mínimo" y queda pendiente hasta que Catálogo agregue `stock_minimo` y `unidad_venta` (igual que en REP‑03). Los insumos no tienen categoría: con "Todas" se muestran con `—`; al elegir categoría se filtran solo productos y se ocultan los insumos, con aviso en pantalla. "Falta para el mínimo" es `max(mínimo − stock, 0)`: `0` si no falta y `—` si el mínimo es N/A. La tabla lleva tipo y categoría, se ordena por tipo y nombre, y el gráfico solo muestra los bajo mínimo ordenados por mayor falta; no se suman cantidades de unidades distintas. La exportación reutiliza REP‑02 con id `stock-actual`: como el contrato exige `desde()`/`hasta()`, ambos son hoy y el nombre es `stock-actual_<hoy>_<hoy>.<ext>`; "Foto al …" se agrega en la descripción de filtros sin tocar el contrato compartido. La fila de totales no suma stocks: solo cuenta artículos; los N/A numéricos salen vacíos en el archivo. Decisión de Mayra (27/11/2026).
 
 ## Lista de reportes y de dónde lee cada uno
 
@@ -84,7 +85,7 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 | Ventas por vendedor | Venta, Usuario | vendedor | barras | REP-05 | Listo (vendedor = quien registra) |
 | Evolución temporal y comparación estacional | Venta, Detalle_Venta, Producto | años, producto, categoría | líneas (una por año) | REP-06 | Listo |
 | Cierres de caja | Sesion_Caja, Cierre_Caja_Detalle, Movimiento_Caja, Usuario | usuario que cerró, estado, medio de pago | barras de faltantes y sobrantes | REP-07 | Listo |
-| Stock actual y bajo mínimo | stock de productos e insumos | categoría, solo bajo mínimo | barras actual vs mínimo | REP-08 | 🔒 Stock |
+| Stock actual y bajo mínimo | Producto, Insumo | tipo, categoría, solo bajo mínimo | barras actual vs mínimo | REP-08 | Listo |
 | Entradas, salidas y descartes de stock | movimientos de stock | producto/insumo, tipo, proveedor | barras apiladas | REP-09 | 🔒 Stock |
 | Costos por tipo (insumos, sueldos, servicios) y evolución | Costo | tipo de costo | líneas por tipo | REP-10 | 🔒 Costos |
 | Resultado del período (ventas − costos) | Venta, Costo | — | barras vendido vs costos + línea de resultado | REP-11 | 🔒 Costos |
@@ -109,6 +110,10 @@ faltante             = |diferencia| si diferencia < 0, si no 0
 sobrante             = diferencia si diferencia > 0, si no 0
 ingresos / egresos   = SUMA(Movimiento_Caja.monto) por tipo y medio de pago
                        (las ANULACION son EGRESO; el monto inicial no cuenta)
+stock actual         = COALESCE(Producto/Insumo.stock_actual, 0)   (columna, foto de hoy)
+stock mínimo         = Insumo.stock_minimo, o 0 si llegara null; N/A en productos
+bajo mínimo          = stock actual < stock mínimo                 (estricto; nunca en productos)
+falta para el mínimo = MAX(stock mínimo − stock actual, 0)         (N/A si el mínimo es N/A)
 ```
 
 **Resultado** compara el período de la venta (su fecha) con el período del costo. Cómo se asigna un costo a un período depende de Costos pregunta 4 (mes y año, o fecha de pago). Es un resultado **simple**, no contable: no considera stock sin vender ni amortizaciones. Conviene aclararlo en la pantalla para que nadie lo lea como un balance.
@@ -121,13 +126,16 @@ ingresos / egresos   = SUMA(Movimiento_Caja.monto) por tipo y medio de pago
 - **Vendedor inactivo o administrador.** En REP-05 sus ventas siguen contando: la baja lógica no borra el historial y el rol no excluye filas. Se pueden elegir en el filtro y aparecen marcados como inactivos cuando corresponde.
 - **Producto que cambió de precio.** Las ventas viejas suman con el precio al que se vendieron (el copiado en la línea).
 - **Cierre con diferencia y anulación posterior.** Si al cerrar faltaban $10 y después se anuló una venta, el egreso de la anulación se suma en la sesión en que se registró (ADR 0002) y no cambia el declarado de la sesión cerrada. En REP‑07 el faltante sigue siendo los $10 del cierre y la anulación aparece como egreso. La marca de "corregido" queda pendiente hasta CAJA‑08; no se deduce de Auditoría.
+- **Producto sin mínimo.** Un producto con `stock_actual = 0` no es "bajo mínimo": `Producto` no guarda mínimo, así que mínimo, unidad y falta se muestran `—`. No se inventa un mínimo 0 ni se infiere de los movimientos; queda pendiente hasta que Catálogo agregue los campos (igual que `unidad_venta` en REP‑03).
+- **Insumo sin mínimo cargado.** Aunque la columna es obligatoria, el código tolera `null` y lo trata como `0`, igual que `StockService`: con stock `0` o mayor no se marca como bajo mínimo y la falta es `0`. Un insumo con mínimo `0` tampoco se marca salvo stock negativo.
+- **Insumo con stock 2 kg y mínimo 5 kg.** Está bajo mínimo, la falta es `3 kg` y el gráfico lo muestra con barras de 2 y 5. Si se elige la categoría "Bebidas", ese insumo desaparece (no tiene categoría) y la pantalla lo avisa.
 
 ## Preguntas abiertas
 
 | Pregunta | Para quién | Qué bloquea |
 | --- | --- | --- |
 | Facturación (ya confirmado que la emite el sistema): ¿factura electrónica de ARCA o comprobante interno? ¿Monotributo o responsable inscripto? ¿Toda venta o solo a pedido? ¿Entra en el alcance de la PPS? **Tiene que decidirlo Ventas (Ivan) y actualizar Ventas 15** | equipo / clienta | REP-14. También cambia Venta y Cliente |
-| Stock (todo el cuestionario 06): cómo se guardan stock actual, mínimo y movimientos | equipo | REP-08, REP-09 |
+| Stock: detalle de movimientos (tipos, motivos y proveedor) para el reporte de entradas, salidas y descartes. El origen del saldo y del mínimo ya está respondido y aplicado en REP‑08 | equipo | REP-09 |
 | Stock 1: ¿hay registro de producción? | equipo / clienta | REP-12 |
 | Costos (todo el cuestionario 04), sobre todo 4 (período) y 5 (tipos) | equipo / clienta | REP-10, REP-11 |
 | Incidencias (cuestionario 09): tipos y estados | equipo | REP-13 |

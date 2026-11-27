@@ -15,7 +15,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-05 | Ventas por vendedor | REP-01 | ✅ |
 | REP-06 | Evolución de ventas y comparación estacional | REP-01 | ✅ |
 | REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | ✅ |
-| REP-08 | Stock actual y productos bajo mínimo | REP-01 | 🔒 Falta respuesta |
+| REP-08 | Stock actual y productos bajo mínimo | REP-01 | ✅ |
 | REP-09 | Entradas, salidas y descartes de stock | REP-01 | 🔒 Falta respuesta |
 | REP-10 | Costos por tipo y su evolución | REP-01 | 🔒 Falta respuesta |
 | REP-11 | Resultado del período (ventas menos costos) | REP-01, REP-10 | 🔒 Falta respuesta |
@@ -182,23 +182,28 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 ---
 
-## REP-08. Stock actual y productos bajo mínimo 🔒
+## REP-08. Stock actual y productos bajo mínimo ✅
 
 **Qué construir:** el administrador ve el stock actual de productos e insumos y, en especial, los que están bajo mínimo.
 
 **Bloqueado por:** 01: Ventas por período
 
-**Espera respuesta a:** Cuestionario 06 de Stock (cómo se guardan stock actual y mínimo)
-
 **Criterios de aceptación**
-- [ ] (A confirmar con el módulo Stock) De dónde sale el stock actual: columna en Producto/Insumo o suma de movimientos.
-- [ ] Filtros: tipo (producto o insumo), categoría y "solo bajo mínimo".
-- [ ] Cada fila muestra artículo, unidad, stock actual, stock mínimo y cuánto falta para llegar al mínimo.
-- [ ] Gráfico de barras stock actual contra mínimo para los bajo mínimo.
-- [ ] No lleva rango de fechas: es una foto de hoy.
-- [ ] Exporta con lo de REP-02.
+- [x] De dónde sale el stock actual: columna `stock_actual` en `Producto`/`Insumo`, con `COALESCE` a 0; no se suman movimientos.
+- [x] Filtros: tipo (producto o insumo), categoría y "solo bajo mínimo".
+- [x] Cada fila muestra artículo, unidad, stock actual, stock mínimo y cuánto falta para llegar al mínimo.
+- [x] Gráfico de barras stock actual contra mínimo para los bajo mínimo.
+- [x] No lleva rango de fechas: es una foto de hoy.
+- [x] Exporta con lo de REP-02 (Excel, CSV y PDF, con los mismos filtros).
+- [x] Solo administradores: el backend responde 403 al vendedor.
 
-**Tablas:** (a definir por Stock)
+**Respuesta de Stock (revisión solo lectura, 27/11/2026):** el saldo vigente es la columna denormalizada `stock_actual` (`numeric(12,3)`, `not null`) de `Producto` e `Insumo` (`Producto.java:32`, `Insumo.java:29`). `StockService` es el único que la escribe y lo hace junto con el `Movimiento_Stock` en la misma transacción; los movimientos son inmutables (`ENTRADA`/`SALIDA`, sin estado ni flag de anulación) y no hay reconciliación entre saldo y movimientos. El mínimo existe solo en `Insumo.stock_minimo` (`Insumo.java:35`); `Producto` no lo tiene. La categoría es `Producto.categoria` (`String` libre, obligatoria) y los insumos no tienen categoría. La unidad existe solo en `Insumo.unidad_medida`; no hay `unidad_venta` ni conversión entre unidades.
+
+**Decisiones aplicadas (Mayra, 27/11/2026):** es una foto sin rango de fechas: el día se toma del `Clock` del taller (`America/Argentina/Buenos_Aires`, inyectable en tests). Un insumo con mínimo `null` usa `0`, igual que `StockService`, y "bajo mínimo" es `stock < mínimo` estricto. Los productos no tienen mínimo ni unidad: se muestra `—`/N/A, nunca se marcan como "bajo mínimo" y quedan como pendiente (ver abajo). Los insumos no tienen categoría: con "Todas" aparecen con `—`; al elegir una categoría se filtran solo los productos, se ocultan los insumos y la pantalla lo avisa. La tabla incluye `Tipo` y `Categoría` para que se entienda el filtro, ordenada por tipo y nombre. "Falta para el mínimo" es `max(mínimo − stock, 0)`: `0` cuando no falta y `—` si el mínimo es N/A; el gráfico solo incluye los bajo mínimo y los ordena por mayor falta. No se suman stocks de unidades distintas. La exportación reutiliza REP‑02 con id `stock-actual`: como el contrato compartido exige `desde()`/`hasta()`, ambos valen hoy y el nombre es `stock-actual_<hoy>_<hoy>.<ext>`; la línea "Foto al …" va en la descripción de filtros, junto a "Desde/Hasta" que REP‑02 siempre imprime. La fila de totales del archivo no suma stocks: solo indica la cantidad de artículos; los valores N/A numéricos quedan vacíos en el archivo (en pantalla se muestra `—`).
+
+**Pendiente documentado (mínimo y unidad de Producto):** igual que en REP‑03, `Producto` no tiene `stock_minimo` ni `unidad_venta`. No se infiere el mínimo desde los movimientos ni se agrega la columna desde Reportes: se muestra N/A y el artículo nunca entra en "bajo mínimo". Cuando Catálogo agregue ambos campos con su migración, se podrán completar la columna de mínimo, la de unidad y el cálculo de falta para productos sin cambiar el contrato del reporte.
+
+**Tablas:** Producto, Insumo (solo lectura). No se agregaron tablas ni columnas; no se modificó el módulo Stock ni Catálogo.
 
 ---
 

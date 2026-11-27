@@ -458,6 +458,56 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @Transactional
+    @DisplayName("REP-08: la descarga es la foto de hoy, con la misma tabla y los filtros de la pantalla")
+    void exportarStockActual() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Producto (id_producto, nombre, precio, stock_actual, categoria) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                401L, "Café", new BigDecimal("10.00"), new BigDecimal("2.000"), "Bebidas");
+        jdbcTemplate.update(
+                "INSERT INTO Insumo (id_insumo, nombre, stock_actual, unidad_medida, "
+                        + "stock_minimo, costo) VALUES (?, ?, ?, ?, ?, ?)",
+                401L, "Harina", new BigDecimal("2.000"), "kg", 5, new BigDecimal("1.00"));
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "stock-actual")
+                            .param("formato", extension)
+                            .param("solo_bajo_minimo", "false"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"stock-actual_2026-11-26_2026-11-26."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Reporte de stock actual y bajo mínimo")
+                    .contains("Desde: 2026-11-26")
+                    .contains("Hasta: 2026-11-26")
+                    .contains("Foto al 26/11/2026")
+                    .contains("Tipo: Todos")
+                    .contains("Categoría: Todas")
+                    .contains("Solo bajo mínimo: No")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    .contains("Artículo")
+                    .contains("Stock actual")
+                    // El PDF parte las celdas angostas: se verifican fragmentos estables.
+                    .contains("Café")
+                    .contains("Hari")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("3.000"), TipoDatoExportable.DECIMAL))
+                    .contains("Totales");
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {

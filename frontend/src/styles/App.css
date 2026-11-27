@@ -1047,6 +1047,33 @@
   font-weight: 500;
 }
 
+.toolbar-check {
+  justify-content: center;
+}
+
+.toolbar-check input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.badge-alerta {
+  margin-left: 0.4rem;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.table-stock {
+  min-width: 900px;
+}
+
+.fila-bajo-minimo td {
+  background: #fef2f2;
+  font-weight: 500;
+}
+
 .table tfoot th,
 .table tfoot td {
   background: #f9fafb;

@@ -49,6 +49,7 @@ const MENUS = [
       { to: '/reportes/ventas-por-vendedor', label: 'Ventas por vendedor' },
       { to: '/reportes/evolucion-ventas', label: 'Evolución de ventas' },
       { to: '/reportes/cierres-caja', label: 'Cierres de caja' },
+      { to: '/reportes/stock-actual', label: 'Stock actual y bajo mínimo' },
     ],
   },
   {

@@ -43,6 +43,14 @@ function paramsComparacionEstacional({ anios, id_producto, categoria }) {
   return params.toString()
 }
 
+function paramsStockActual({ tipo, categoria, solo_bajo_minimo }) {
+  const params = new URLSearchParams()
+  if (tipo && tipo !== 'TODOS') params.set('tipo', tipo)
+  if (categoria) params.set('categoria', categoria)
+  params.set('solo_bajo_minimo', String(Boolean(solo_bajo_minimo)))
+  return params.toString()
+}
+
 export const reportesService = {
   ventasPorPeriodo: (filtros) =>
     api.get(`${REPORTES}/ventas-por-periodo?${paramsVentasPorPeriodo(filtros)}`),
@@ -61,6 +69,9 @@ export const reportesService = {
 
   comparacionEstacional: (filtros) =>
     api.get(`${REPORTES}/evolucion-ventas?${paramsComparacionEstacional(filtros)}`),
+
+  stockActual: (filtros) =>
+    api.get(`${REPORTES}/stock-actual?${paramsStockActual(filtros)}`),
 
   exportar: ({ reporte, formato, ...filtros }) => {
     const params = new URLSearchParams({ reporte, formato, ...filtros })
