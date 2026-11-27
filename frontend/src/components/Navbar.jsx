@@ -47,6 +47,7 @@ const MENUS = [
       { to: '/reportes/ventas-por-producto', label: 'Ventas por producto' },
       { to: '/reportes/ventas-por-cliente', label: 'Ventas por cliente' },
       { to: '/reportes/ventas-por-vendedor', label: 'Ventas por vendedor' },
+      { to: '/reportes/evolucion-ventas', label: 'Evolución de ventas' },
     ],
   },
   {

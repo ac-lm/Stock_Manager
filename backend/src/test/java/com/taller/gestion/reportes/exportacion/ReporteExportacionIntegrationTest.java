@@ -334,6 +334,64 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @Transactional
+    @DisplayName("REP-06: los tres archivos usan la comparación por año y los filtros de la pantalla")
+    void exportarComparacionEstacional() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Producto (id_producto, nombre, precio, stock_actual, categoria) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                101L, "Café en grano", new BigDecimal("10.00"), new BigDecimal("5.000"), "Bebidas");
+        long venta2025 = guardarVenta(LocalDate.of(2025, 1, 10), "CONFIRMADA", "100.00");
+        jdbcTemplate.update(
+                "INSERT INTO Detalle_Venta (id_venta_fk, id_producto_fk, cantidad, "
+                        + "precio_historico, subtotal) VALUES (?, ?, ?, ?, ?)",
+                venta2025, 101L, new BigDecimal("1.000"),
+                new BigDecimal("100.00"), new BigDecimal("100.00"));
+        long venta2026 = guardarVenta(LocalDate.of(2026, 1, 10), "CONFIRMADA", "200.00");
+        jdbcTemplate.update(
+                "INSERT INTO Detalle_Venta (id_venta_fk, id_producto_fk, cantidad, "
+                        + "precio_historico, subtotal) VALUES (?, ?, ?, ?, ?)",
+                venta2026, 101L, new BigDecimal("1.000"),
+                new BigDecimal("200.00"), new BigDecimal("200.00"));
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "evolucion-ventas")
+                            .param("formato", extension)
+                            .param("anios", "2024,2025,2026")
+                            .param("id_producto", "101")
+                            .param("categoria", "Bebidas"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"evolucion-ventas_2024-01-01_2026-11-30."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Evolución de ventas y comparación estacional")
+                    .contains("Años: 2024, 2025, 2026")
+                    .contains("Producto: 101")
+                    .contains("Categoría: Bebidas")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    .contains("Mes")
+                    .contains("Var.")
+                    .contains("ene")
+                    .contains("Totales")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("100.00"), TipoDatoExportable.DECIMAL))
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("200.00"), TipoDatoExportable.DECIMAL))
+                    .contains("100,00 %");
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {

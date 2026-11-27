@@ -13,7 +13,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-03 | Ventas por producto y productos más vendidos | REP-01 | ✅ |
 | REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | ✅ |
 | REP-05 | Ventas por vendedor | REP-01 | ✅ |
-| REP-06 | Evolución de ventas y comparación estacional | REP-01 | Listo para empezar |
+| REP-06 | Evolución de ventas y comparación estacional | REP-01 | ✅ |
 | REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | Listo para empezar |
 | REP-08 | Stock actual y productos bajo mínimo | REP-01 | 🔒 Falta respuesta |
 | REP-09 | Entradas, salidas y descartes de stock | REP-01 | 🔒 Falta respuesta |
@@ -144,14 +144,17 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 **Bloqueado por:** 01: Ventas por período
 
 **Criterios de aceptación**
-- [ ] Filtros: años a comparar (por defecto el actual y los dos anteriores), producto y categoría.
-- [ ] Gráfico de líneas superpuestas: eje X de enero a diciembre, una línea por año.
-- [ ] Tabla con meses en filas y años en columnas, más la variación porcentual contra el año anterior.
-- [ ] Los meses sin ventas valen 0; los meses que todavía no pasaron no se dibujan.
-- [ ] Agrupa con EXTRACT(YEAR) y EXTRACT(MONTH) sobre la fecha de la venta, solo confirmadas.
-- [ ] Exporta con lo de REP-02.
+- [x] Filtros: años a comparar (por defecto el actual y los dos anteriores), producto y categoría.
+- [x] Gráfico de líneas superpuestas: eje X de enero a diciembre, una línea por año.
+- [x] Tabla con meses en filas y años en columnas, más la variación porcentual contra el año anterior.
+- [x] Los meses sin ventas valen 0; los meses que todavía no pasaron no se dibujan.
+- [x] Agrupa con EXTRACT(YEAR) y EXTRACT(MONTH) sobre la fecha de la venta, solo confirmadas.
+- [x] Exporta con lo de REP-02 (Excel, CSV y PDF, con los mismos filtros).
+- [x] Solo administradores: el backend responde 403 al vendedor.
 
-**Tablas:** Venta, Detalle_Venta (solo lectura)
+**Decisiones aplicadas:** por omisión se comparan el año actual y los dos anteriores; se pueden elegir de 1 a 5 años, sin repetir, entre 2000 y el año actual, y el DTO los devuelve ordenados de menor a mayor. Sin filtro de producto se suma `Venta.total` (como REP‑01); con producto o categoría se suma `Detalle_Venta.subtotal` de las líneas que cumplen (como REP‑03), con la categoría tomada de `Producto.categoria`. El eje X va de enero a diciembre del primer año completo; en el año en curso se omiten los meses futuros, tanto en la tabla como en el gráfico. "Hoy" se determina en el backend con un `Clock` en `America/Argentina/Buenos_Aires` (inyectable en los tests) y en la pantalla con la misma zona. Cada año se compara contra el inmediatamente anterior dentro de los seleccionados, mes por mes y también en los totales: si el año anterior vendió 0 se muestra `—` (no se divide por cero). La variación es `(actual - anterior) / anterior * 100`, con dos decimales. Identificador de exportación: `evolucion-ventas`; nombre de archivo `evolucion-ventas_<desde>_<hasta>.<ext>`.
+
+**Tablas:** Venta, Detalle_Venta y Producto (solo lectura). No se agregaron tablas ni columnas.
 
 ---
 

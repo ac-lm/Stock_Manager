@@ -27,6 +27,14 @@ function paramsVentasPorVendedor({ desde, hasta, id_vendedor }) {
   return params.toString()
 }
 
+function paramsComparacionEstacional({ anios, id_producto, categoria }) {
+  const params = new URLSearchParams()
+  if (anios?.length) params.set('anios', anios.join(','))
+  if (id_producto) params.set('id_producto', id_producto)
+  if (categoria) params.set('categoria', categoria)
+  return params.toString()
+}
+
 export const reportesService = {
   ventasPorPeriodo: (filtros) =>
     api.get(`${REPORTES}/ventas-por-periodo?${paramsVentasPorPeriodo(filtros)}`),
@@ -39,6 +47,9 @@ export const reportesService = {
 
   ventasPorVendedor: (filtros) =>
     api.get(`${REPORTES}/ventas-por-vendedor?${paramsVentasPorVendedor(filtros)}`),
+
+  comparacionEstacional: (filtros) =>
+    api.get(`${REPORTES}/evolucion-ventas?${paramsComparacionEstacional(filtros)}`),
 
   exportar: ({ reporte, formato, ...filtros }) => {
     const params = new URLSearchParams({ reporte, formato, ...filtros })

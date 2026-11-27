@@ -954,6 +954,29 @@
   width: 100%;
 }
 
+/* Evolución de ventas: casillas de años a comparar */
+.toolbar-anios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+}
+
+.toolbar-anios label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.toolbar-anios input {
+  accent-color: var(--primary);
+}
+
+.toolbar-anios label:has(input:disabled) {
+  color: var(--muted);
+}
+
 .toolbar-acciones {
   display: flex;
   gap: 0.5rem;

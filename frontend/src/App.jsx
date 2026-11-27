@@ -19,6 +19,7 @@ import ReporteVentasPorPeriodoPage from './pages/ReporteVentasPorPeriodoPage'
 import ReporteVentasPorProductoPage from './pages/ReporteVentasPorProductoPage'
 import ReporteVentasPorClientePage from './pages/ReporteVentasPorClientePage'
 import ReporteVentasPorVendedorPage from './pages/ReporteVentasPorVendedorPage'
+import ReporteComparacionEstacionalPage from './pages/ReporteComparacionEstacionalPage'
 import UsuariosPage from './pages/UsuariosPage'
 import VentasPage from './pages/VentasPage'
 import './styles/App.css'
@@ -67,6 +68,10 @@ function AppShell() {
               <Route
                 path="/reportes/ventas-por-vendedor"
                 element={<ReporteVentasPorVendedorPage />}
+              />
+              <Route
+                path="/reportes/evolucion-ventas"
+                element={<ReporteComparacionEstacionalPage />}
               />
             </Route>
           </Route>
