@@ -14,7 +14,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | ✅ |
 | REP-05 | Ventas por vendedor | REP-01 | ✅ |
 | REP-06 | Evolución de ventas y comparación estacional | REP-01 | ✅ |
-| REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | Listo para empezar |
+| REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | ✅ |
 | REP-08 | Stock actual y productos bajo mínimo | REP-01 | 🔒 Falta respuesta |
 | REP-09 | Entradas, salidas y descartes de stock | REP-01 | 🔒 Falta respuesta |
 | REP-10 | Costos por tipo y su evolución | REP-01 | 🔒 Falta respuesta |
@@ -165,15 +165,20 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 **Bloqueado por:** 01: Ventas por período; CAJA-05: Cerrar la caja
 
 **Criterios de aceptación**
-- [ ] Filtros: rango de fechas (obligatorio), usuario que cerró, estado de la sesión y medio de pago.
-- [ ] Cada fila muestra la sesión: fecha y hora de apertura y cierre, quién abrió y quién cerró, monto inicial, esperado, declarado y diferencia por medio de pago, y estado.
-- [ ] Totales del período por medio de pago: ingresos, egresos, faltantes y sobrantes.
-- [ ] Resalta las sesiones en pendiente de revisión.
-- [ ] Si un cierre tuvo una corrección, muestra el valor vigente y marca que fue corregido.
-- [ ] Gráfico de barras de la diferencia de cada sesión (negativas y positivas).
-- [ ] Exporta con lo de REP-02.
+- [x] Filtros: rango de fechas (obligatorio), usuario que cerró, estado de la sesión y medio de pago.
+- [x] Cada fila muestra la sesión: fecha y hora de apertura y cierre, quién abrió y quién cerró, monto inicial, esperado, declarado y diferencia por medio de pago, y estado.
+- [x] Totales del período por medio de pago: ingresos, egresos, faltantes y sobrantes.
+- [x] Resalta las sesiones en pendiente de revisión.
+- [ ] Si un cierre tuvo una corrección, muestra el valor vigente y marca que fue corregido. **Pendiente:** hoy se muestra el valor vigente, pero no hay marca de "corregido" (ver pendiente abajo).
+- [x] Gráfico de barras de la diferencia de cada sesión (negativas y positivas).
+- [x] Exporta con lo de REP-02 (Excel, CSV y PDF, con los mismos filtros).
+- [x] Solo administradores: el backend responde 403 al vendedor.
 
-**Tablas:** Sesion_Caja, Cierre_Caja_Detalle, Movimiento_Caja (solo lectura)
+**Decisiones aplicadas (Mayra, 27/11/2026):** el período se filtra por `Sesion_Caja.fecha_apertura`, con fechas inclusivas, y solo entran `CERRADA` y `PENDIENTE_REVISION`; las `ABIERTA` quedan fuera porque no tienen cierre ni declarado. Esperado, declarado y diferencia se toman de los valores vigentes en `Cierre_Caja_Detalle` (`diferencia = declarado - esperado`, con dos decimales). Ingresos y egresos salen de `Movimiento_Caja` agrupados por `tipo` y `medio_pago`; `ANULACION` se registró como `EGRESO`, así que cuenta como egreso y **no se filtra por `Venta.estado`** (ADR 0002: la anulación se contabiliza en la sesión en que se hizo, no se reescribe la sesión original). El monto inicial no cuenta como ingreso ni egreso. Faltante es la diferencia negativa en valor absoluto y sobrante la positiva; se suman por separado, no se netean. El selector de usuario incluye inactivos (se cargan todos, sin paginar) y filtra por quien cerró (`id_usuario_cierre`). El filtro de medio de pago acota las columnas y los totales, pero **no saca sesiones**: las que no tienen ese medio muestran cero. La exportación reutiliza REP‑02 con id `cierres-caja` y nombre `cierres-caja_<desde>_<hasta>.<ext>`; lleva la tabla con fila de totales y no incluye el gráfico. El gráfico de la pantalla muestra una barra por sesión: faltantes hacia abajo (rojo) y sobrantes hacia arriba (verde), con las pendientes de revisión resaltadas también en la tabla.
+
+**Pendiente documentado (marca de "corregido"):** CAJA‑08 (corregir un cierre) todavía no está implementada: no hay flag, fecha, usuario ni endpoint de corrección, y `CORRECCION_CAJA` existe en `AccionAuditoria` pero no se usa. Por decisión de Mayra (27/11/2026) el reporte muestra el valor vigente guardado en `Cierre_Caja_Detalle` y **no infiere correcciones desde Auditoría**. Cuando CAJA‑08 agregue el dato, se podrá marcar la fila como corregida sin tocar este reporte.
+
+**Tablas:** Sesion_Caja, Cierre_Caja_Detalle, Movimiento_Caja, Usuario (solo lectura). No se agregaron tablas ni columnas; no se modificó el módulo Caja.
 
 ---
 

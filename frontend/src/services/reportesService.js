@@ -27,6 +27,14 @@ function paramsVentasPorVendedor({ desde, hasta, id_vendedor }) {
   return params.toString()
 }
 
+function paramsCierresCaja({ desde, hasta, id_usuario_cierre, estado, medio_pago }) {
+  const params = new URLSearchParams({ desde, hasta })
+  if (id_usuario_cierre) params.set('id_usuario_cierre', id_usuario_cierre)
+  if (estado) params.set('estado', estado)
+  if (medio_pago) params.set('medio_pago', medio_pago)
+  return params.toString()
+}
+
 function paramsComparacionEstacional({ anios, id_producto, categoria }) {
   const params = new URLSearchParams()
   if (anios?.length) params.set('anios', anios.join(','))
@@ -47,6 +55,9 @@ export const reportesService = {
 
   ventasPorVendedor: (filtros) =>
     api.get(`${REPORTES}/ventas-por-vendedor?${paramsVentasPorVendedor(filtros)}`),
+
+  cierresCaja: (filtros) =>
+    api.get(`${REPORTES}/cierres-caja?${paramsCierresCaja(filtros)}`),
 
   comparacionEstacional: (filtros) =>
     api.get(`${REPORTES}/evolucion-ventas?${paramsComparacionEstacional(filtros)}`),

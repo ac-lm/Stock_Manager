@@ -72,6 +72,7 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 11. **Exportar** genera el archivo en el backend con la misma consulta y los mismos filtros que la pantalla, así lo exportado nunca difiere de lo que se ve. El nombre del archivo lleva el reporte y el rango (por ejemplo `ventas-por-periodo_2026-10-01_2026-10-31.xlsx`). Propuesta: Apache POI para Excel y OpenPDF para PDF; CSV sin librería.
 12. **Vendedor en REP-05:** es el usuario autenticado que registró la venta (`Venta.id_vendedor`, Ventas 10 opción a). No se filtra por rol: los administradores con ventas también aparecen. Se muestran solo quienes tienen ventas confirmadas en el rango, con ticket promedio por fila y en los totales. La etiqueta es `nombre (ROL)` y lleva además el email cuando dos usuarios del reporte comparten nombre (decisión de Mayra, 27/11/2026). El selector incluye inactivos, marcados como tales.
 13. **Comparación estacional en REP-06:** se comparan el año actual y los dos anteriores por omisión; se pueden elegir de 1 a 5 años, sin repetir, entre 2000 y el año actual (el backend valida y devuelve los años ordenados de menor a mayor). Agrupa con `EXTRACT(YEAR/MONTH)` sobre ventas confirmadas. Sin filtro de producto se suma `Venta.total`; con producto o categoría se suma `Detalle_Venta.subtotal` de las líneas que cumplen, igual que en REP‑03 (la categoría es `Producto.categoria`). Cada año se compara contra el inmediatamente anterior de los seleccionados: `variación = (actual - anterior) / anterior * 100`, con dos decimales; si el anterior vendió 0 se muestra `—` en vez de dividir por cero. Los meses sin ventas se completan en 0 y los meses futuros del año en curso se omiten de la tabla y del gráfico. "Hoy" se toma con un `Clock` en `America/Argentina/Buenos_Aires` (inyectable en tests), la misma zona que usa la pantalla. La exportación reutiliza REP‑02 con el id `evolucion-ventas` y el nombre `evolucion-ventas_<desde>_<hasta>.<ext>`. Decisión de Mayra (27/11/2026).
+14. **Cierres de caja en REP-07:** el período se filtra por `Sesion_Caja.fecha_apertura` (inclusivo, `fecha >= desde AND fecha < hasta + 1 día`) y solo se incluyen `CERRADA` y `PENDIENTE_REVISION`; las `ABIERTA` se excluyen por no tener cierre ni declarado. Esperado, declarado y diferencia son los valores vigentes guardados en `Cierre_Caja_Detalle`, con `diferencia = declarado - esperado` a dos decimales. Ingresos y egresos se suman desde `Movimiento_Caja` por `tipo` y `medio_pago`; las anulaciones están registradas como `EGRESO`/`ANULACION` (ADR 0002), por lo que cuentan como egreso y no se filtra por `Venta.estado`. El monto inicial no es ingreso ni egreso. Faltante = diferencia negativa en valor absoluto; sobrante = diferencia positiva; se totalizan por separado, sin netear. El filtro de usuario es por quien cerró (`id_usuario_cierre`) y su selector incluye inactivos. El filtro de medio de pago acota columnas y totales, sin eliminar sesiones. La exportación usa REP‑02 con id `cierres-caja` y nombre `cierres-caja_<desde>_<hasta>.<ext>`, con tabla y fila de totales pero sin gráfico. Las sesiones pendientes se resaltan en tabla y gráfico. **Pendiente:** la marca de "corregido" espera a CAJA‑08; hoy se muestra el valor vigente y no se infiere corrección desde Auditoría. Decisión de Mayra (27/11/2026).
 
 ## Lista de reportes y de dónde lee cada uno
 
@@ -82,7 +83,7 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 | Ventas por cliente y por tipo de cliente | Venta, Cliente | cliente, tipo de cliente | barras | REP-04 | Listo |
 | Ventas por vendedor | Venta, Usuario | vendedor | barras | REP-05 | Listo (vendedor = quien registra) |
 | Evolución temporal y comparación estacional | Venta, Detalle_Venta, Producto | años, producto, categoría | líneas (una por año) | REP-06 | Listo |
-| Cierres de caja | Sesion_Caja, Cierre_Caja_Detalle | usuario, estado, medio de pago | barras de diferencias | REP-07 | Listo |
+| Cierres de caja | Sesion_Caja, Cierre_Caja_Detalle, Movimiento_Caja, Usuario | usuario que cerró, estado, medio de pago | barras de faltantes y sobrantes | REP-07 | Listo |
 | Stock actual y bajo mínimo | stock de productos e insumos | categoría, solo bajo mínimo | barras actual vs mínimo | REP-08 | 🔒 Stock |
 | Entradas, salidas y descartes de stock | movimientos de stock | producto/insumo, tipo, proveedor | barras apiladas | REP-09 | 🔒 Stock |
 | Costos por tipo (insumos, sueldos, servicios) y evolución | Costo | tipo de costo | líneas por tipo | REP-10 | 🔒 Costos |
@@ -103,6 +104,11 @@ vendido por producto = SUMA(Detalle_Venta.subtotal)  de líneas de ventas confir
 cantidad vendida     = SUMA(Detalle_Venta.cantidad)  agrupada por producto
                        (y por unidad cuando exista Producto.unidad_venta; hoy no existe, ver REP-03)
 resultado            = total vendido del período − total de costos del período
+diferencia de cierre = declarado − esperado        (Cierre_Caja_Detalle)
+faltante             = |diferencia| si diferencia < 0, si no 0
+sobrante             = diferencia si diferencia > 0, si no 0
+ingresos / egresos   = SUMA(Movimiento_Caja.monto) por tipo y medio de pago
+                       (las ANULACION son EGRESO; el monto inicial no cuenta)
 ```
 
 **Resultado** compara el período de la venta (su fecha) con el período del costo. Cómo se asigna un costo a un período depende de Costos pregunta 4 (mes y año, o fecha de pago). Es un resultado **simple**, no contable: no considera stock sin vender ni amortizaciones. Conviene aclararlo en la pantalla para que nadie lo lea como un balance.
@@ -114,6 +120,7 @@ resultado            = total vendido del período − total de costos del perío
 - **Cliente inactivo.** Sus ventas viejas siguen apareciendo con su nombre. En el filtro de cliente se puede elegir aunque esté inactivo.
 - **Vendedor inactivo o administrador.** En REP-05 sus ventas siguen contando: la baja lógica no borra el historial y el rol no excluye filas. Se pueden elegir en el filtro y aparecen marcados como inactivos cuando corresponde.
 - **Producto que cambió de precio.** Las ventas viejas suman con el precio al que se vendieron (el copiado en la línea).
+- **Cierre con diferencia y anulación posterior.** Si al cerrar faltaban $10 y después se anuló una venta, el egreso de la anulación se suma en la sesión en que se registró (ADR 0002) y no cambia el declarado de la sesión cerrada. En REP‑07 el faltante sigue siendo los $10 del cierre y la anulación aparece como egreso. La marca de "corregido" queda pendiente hasta CAJA‑08; no se deduce de Auditoría.
 
 ## Preguntas abiertas
 

@@ -1038,6 +1038,15 @@
   white-space: nowrap;
 }
 
+.table-cierres {
+  min-width: 1100px;
+}
+
+.fila-pendiente td {
+  background: #fffbeb;
+  font-weight: 500;
+}
+
 .table tfoot th,
 .table tfoot td {
   background: #f9fafb;

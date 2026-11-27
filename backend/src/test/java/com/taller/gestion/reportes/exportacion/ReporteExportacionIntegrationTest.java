@@ -392,6 +392,72 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @DisplayName("REP-07: la descarga de cierres coincide con el reporte de pantalla")
+    void exportarCierres_coincideConReporteDePantalla() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Usuario (id_usuario, nombre, email, password, rol, activo) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                301L, "Ana Abre", "anaCierres@taller.local", "hash", "VENDEDOR", true);
+        jdbcTemplate.update(
+                "INSERT INTO Usuario (id_usuario, nombre, email, password, rol, activo) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                302L, "Luis Cierra", "luisCierres@taller.local", "hash", "VENDEDOR", true);
+        long sesion = jdbcTemplate.queryForObject(
+                "INSERT INTO Sesion_Caja (id_usuario_apertura, id_usuario_cierre, fecha_apertura, "
+                        + "hora_apertura, fecha_cierre, hora_cierre, monto_inicial, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id_sesion",
+                Long.class, 301L, 302L, Date.valueOf(LocalDate.of(2026, 10, 1)),
+                Time.valueOf(LocalTime.of(9, 0)), Date.valueOf(LocalDate.of(2026, 10, 1)),
+                Time.valueOf(LocalTime.of(17, 0)), new BigDecimal("100.00"), "CERRADA");
+        jdbcTemplate.update(
+                "INSERT INTO Cierre_Caja_Detalle (id_sesion, medio_pago, total_esperado, "
+                        + "total_declarado, diferencia) VALUES (?, ?, ?, ?, ?)",
+                sesion, "EFECTIVO", new BigDecimal("100.00"), new BigDecimal("90.00"),
+                new BigDecimal("-10.00"));
+        jdbcTemplate.update(
+                "INSERT INTO Movimiento_Caja (id_sesion_caja, id_usuario, tipo, concepto, monto, "
+                        + "medio_pago, fecha, hora) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                sesion, 301L, "INGRESO", "VENTA", new BigDecimal("100.00"), "EFECTIVO",
+                Date.valueOf(LocalDate.of(2026, 10, 1)), Time.valueOf(LocalTime.of(10, 0)));
+
+        List<String[]> formatos = List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"});
+
+        for (String[] formato : formatos) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "cierres-caja")
+                            .param("formato", extension)
+                            .param("desde", "2026-10-01")
+                            .param("hasta", "2026-10-03"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"cierres-caja_2026-10-01_2026-10-03."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Reporte de cierres de caja")
+                    .contains("Desde: 2026-10-01")
+                    .contains("Hasta: 2026-10-03")
+                    .contains("Estado: Todas (cerradas y pendientes de revisión)")
+                    .contains("Medio de pago: Todos")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    // El PDF parte las celdas angostas: se verifican fragmentos estables.
+                    .contains("EFEC")
+                    .contains("CERR")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("100.00"), TipoDatoExportable.DECIMAL))
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("-10.00"), TipoDatoExportable.DECIMAL));
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {
