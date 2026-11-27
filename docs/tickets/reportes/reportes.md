@@ -12,7 +12,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-02 | Exportar un reporte a Excel, CSV y PDF | REP-01 | ✅ |
 | REP-03 | Ventas por producto y productos más vendidos | REP-01 | ✅ |
 | REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | ✅ |
-| REP-05 | Ventas por vendedor | REP-01 | Listo para empezar |
+| REP-05 | Ventas por vendedor | REP-01 | ✅ |
 | REP-06 | Evolución de ventas y comparación estacional | REP-01 | Listo para empezar |
 | REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | Listo para empezar |
 | REP-08 | Stock actual y productos bajo mínimo | REP-01 | 🔒 Falta respuesta |
@@ -122,13 +122,18 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 **Bloqueado por:** 01: Ventas por período
 
 **Criterios de aceptación**
-- [ ] Filtros: rango de fechas (obligatorio) y vendedor.
-- [ ] Cada fila muestra vendedor, cantidad de ventas, total vendido y ticket promedio, con gráfico de barras.
-- [ ] Incluye a los administradores si registraron ventas.
-- [ ] Si Ventas 10 se responde "sí" (vendedor distinto de quien carga), la consulta pasa a usar esa columna.
-- [ ] Exporta con lo de REP-02.
+- [x] Filtros: rango de fechas (obligatorio e inclusivo) y vendedor opcional, incluyendo usuarios inactivos.
+- [x] Cada fila muestra vendedor, cantidad de ventas, total vendido y ticket promedio, con gráfico de barras.
+- [x] Solo aparecen los vendedores con ventas confirmadas en el rango, ordenados de mayor a menor total, con fila de totales abajo.
+- [x] Solo cuentan las ventas confirmadas; las anuladas no, aunque se hayan anulado después.
+- [x] Incluye a los administradores si registraron ventas.
+- [x] La etiqueta del vendedor es `nombre (rol)`; si dos usuarios tienen el mismo nombre, lleva también el email.
+- [x] Exporta con lo de REP-02 (Excel, CSV y PDF, con los mismos filtros).
+- [x] Solo administradores: el backend responde 403 al vendedor.
 
-**Tablas:** Venta, Usuario (solo lectura)
+**Decisiones aplicadas:** Ventas 10 ya está respondida con la opción a) "siempre el usuario que carga la venta" (`id_vendedor` se toma de `UsuarioService.obtenerAutenticado()`), así que la consulta usa `Venta.id_vendedor` sin cambios de esquema. El rango es inclusivo (`fecha >= desde AND fecha < hasta + 1 día`) y el total sale de `SUM(Venta.total)`; la cantidad es `COUNT` de ventas confirmadas. El ticket promedio es `total vendido / cantidad de ventas` con dos decimales (0 si no hubo ventas), tanto por fila como en los totales. El orden desempata por nombre de usuario. La etiqueta muestra el rol en mayúsculas del enum (`VENDEDOR`/`ADMINISTRADOR`) y, cuando dos usuarios comparten nombre entre las filas del reporte, se agrega el email para distinguirlos; la baja lógica no cambia el historial. El selector carga la lista completa de usuarios con `incluirInactivos=true` (sin paginar, igual que en REP‑04) y marca "(inactivo)" a los dados de baja. La exportación genera solo la tabla por vendedor, con los filtros en el encabezado; identificador: `ventas-por-vendedor`.
+
+**Tablas:** Venta, Usuario (solo lectura). No se agregaron tablas ni columnas. Consulta 0 ventas con `id_vendedor` nulo y 0 huérfanas en la base de desarrollo; si apareciera alguna, queda fuera del reporte sin modificarla.
 
 ---
 

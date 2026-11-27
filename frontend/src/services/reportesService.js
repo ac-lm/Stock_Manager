@@ -21,6 +21,12 @@ function paramsVentasPorCliente({ desde, hasta, id_cliente, tipo_cliente }) {
   return params.toString()
 }
 
+function paramsVentasPorVendedor({ desde, hasta, id_vendedor }) {
+  const params = new URLSearchParams({ desde, hasta })
+  if (id_vendedor) params.set('id_vendedor', id_vendedor)
+  return params.toString()
+}
+
 export const reportesService = {
   ventasPorPeriodo: (filtros) =>
     api.get(`${REPORTES}/ventas-por-periodo?${paramsVentasPorPeriodo(filtros)}`),
@@ -30,6 +36,9 @@ export const reportesService = {
 
   ventasPorCliente: (filtros) =>
     api.get(`${REPORTES}/ventas-por-cliente?${paramsVentasPorCliente(filtros)}`),
+
+  ventasPorVendedor: (filtros) =>
+    api.get(`${REPORTES}/ventas-por-vendedor?${paramsVentasPorVendedor(filtros)}`),
 
   exportar: ({ reporte, formato, ...filtros }) => {
     const params = new URLSearchParams({ reporte, formato, ...filtros })

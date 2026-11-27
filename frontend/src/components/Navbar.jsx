@@ -25,6 +25,7 @@ const LINKS_ADMIN = [
   { to: '/reportes/ventas-por-periodo', label: 'Ventas por período' },
   { to: '/reportes/ventas-por-producto', label: 'Ventas por producto' },
   { to: '/reportes/ventas-por-cliente', label: 'Ventas por cliente' },
+  { to: '/reportes/ventas-por-vendedor', label: 'Ventas por vendedor' },
 ]
 
 const ROLES = {

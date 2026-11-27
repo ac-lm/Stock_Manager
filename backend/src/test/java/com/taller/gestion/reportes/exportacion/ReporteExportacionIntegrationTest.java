@@ -272,6 +272,68 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @Transactional
+    @DisplayName("REP-05: la exportación usa la tabla por vendedor y los filtros de la pantalla")
+    void exportarVentasPorVendedor() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Usuario (id_usuario, nombre, email, password, rol, activo) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                101L, "Ana Pérez", "ana@taller.local", "$2a$10$hashDePrueba", "VENDEDOR", true);
+        jdbcTemplate.update(
+                "INSERT INTO Venta (id_cliente, id_vendedor, fecha, hora, total, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                1L, 101L, Date.valueOf(LocalDate.of(2026, 10, 2)),
+                Time.valueOf(LocalTime.of(10, 30)), new BigDecimal("50.00"), "CONFIRMADA");
+        jdbcTemplate.update(
+                "INSERT INTO Venta (id_cliente, id_vendedor, fecha, hora, total, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                1L, 101L, Date.valueOf(LocalDate.of(2026, 10, 3)),
+                Time.valueOf(LocalTime.of(10, 30)), new BigDecimal("200.00"), "CONFIRMADA");
+        jdbcTemplate.update(
+                "INSERT INTO Venta (id_cliente, id_vendedor, fecha, hora, total, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                1L, 101L, Date.valueOf(LocalDate.of(2026, 10, 4)),
+                Time.valueOf(LocalTime.of(10, 30)), new BigDecimal("999.00"), "ANULADA");
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "ventas-por-vendedor")
+                            .param("formato", extension)
+                            .param("desde", "2026-10-01")
+                            .param("hasta", "2026-10-31")
+                            .param("id_vendedor", "101"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"ventas-por-vendedor_2026-10-01_2026-10-31."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Ventas por vendedor")
+                    .contains("Desde: 2026-10-01")
+                    .contains("Hasta: 2026-10-31")
+                    .contains("Vendedor: 101")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    .contains("Cantidad de ventas")
+                    .contains("Ticket promedio")
+                    .contains("Ana Pérez (VENDEDOR)")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("250.00"), TipoDatoExportable.DECIMAL))
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("125.00"), TipoDatoExportable.DECIMAL))
+                    .contains("Totales")
+                    .doesNotContain(formateadorValores.formatear(
+                            new BigDecimal("999.00"), TipoDatoExportable.DECIMAL));
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {
