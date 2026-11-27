@@ -23,6 +23,7 @@ import ReporteComparacionEstacionalPage from './pages/ReporteComparacionEstacion
 import ReporteCierresCajaPage from './pages/ReporteCierresCajaPage'
 import ReporteStockActualPage from './pages/ReporteStockActualPage'
 import ReporteMovimientosStockPage from './pages/ReporteMovimientosStockPage'
+import ReporteIncidenciasDescartesPage from './pages/ReporteIncidenciasDescartesPage'
 import ReporteCostosPorTipoPage from './pages/ReporteCostosPorTipoPage'
 import ReporteResultadoPeriodoPage from './pages/ReporteResultadoPeriodoPage'
 import UsuariosPage from './pages/UsuariosPage'
@@ -89,6 +90,10 @@ function AppShell() {
               <Route
                 path="/reportes/movimientos-stock"
                 element={<ReporteMovimientosStockPage />}
+              />
+              <Route
+                path="/reportes/incidencias-descartes"
+                element={<ReporteIncidenciasDescartesPage />}
               />
               <Route
                 path="/reportes/costos-por-tipo"

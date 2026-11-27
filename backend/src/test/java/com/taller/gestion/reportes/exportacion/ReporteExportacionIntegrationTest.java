@@ -730,6 +730,75 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @Transactional
+    @DisplayName("REP-13: la descarga usa la tabla sin gráfico y lleva los avisos del cruce")
+    void exportarIncidenciasDescartes() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Usuario (id_usuario, nombre, email, password, rol, activo) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                921L, "Ana Reportes", "anaReportesExport@taller.local", "hash",
+                "ADMINISTRADOR", true);
+        jdbcTemplate.update(
+                "INSERT INTO Tipo_Incidencia (id_tipo_incidencia, nombre, activo) "
+                        + "VALUES (?, ?, ?)",
+                921L, "Rotura", true);
+        jdbcTemplate.update(
+                "INSERT INTO Producto (id_producto, nombre, precio, stock_actual, categoria) "
+                        + "VALUES (?, ?, ?, ?, ?)",
+                921L, "Café", new BigDecimal("10.00"), new BigDecimal("4.000"), "Bebidas");
+        jdbcTemplate.update(
+                "INSERT INTO Incidencia (id_incidencia, id_tipo_incidencia, id_producto, "
+                        + "id_insumo, descripcion, cantidad_afectada, estado, fecha, id_usuario) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                921L, 921L, 921L, null, "Rotura", new BigDecimal("2.000"), "ABIERTA",
+                java.sql.Timestamp.valueOf("2026-10-03 09:00:00"), 921L);
+        jdbcTemplate.update(
+                "INSERT INTO Movimiento_Stock (id_movimiento_stock, id_producto, id_insumo, "
+                        + "tipo, cantidad, motivo, id_usuario, fecha_hora, id_venta) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                921L, 921L, null, "SALIDA", new BigDecimal("1.000"), "MERMA", 921L,
+                java.sql.Timestamp.valueOf("2026-10-04 17:00:00"), null);
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "incidencias-descartes")
+                            .param("formato", extension)
+                            .param("desde", "2026-10-01")
+                            .param("hasta", "2026-10-31")
+                            .param("estado", "ABIERTA"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"incidencias-descartes_2026-10-01_2026-10-31."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Incidencias y descartes")
+                    .contains("Desde: 2026-10-01")
+                    .contains("Hasta: 2026-10-31")
+                    .contains("Estado: ABIERTA")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    .contains("INC-07")
+                    .contains("Tipo de incidencia")
+                    // El PDF parte las celdas angostas: se verifican fragmentos estables.
+                    .contains("afectada")
+                    .contains("Movimientos MERMA")
+                    .contains("traslape")
+                    .contains("Rotura")
+                    .contains("Café")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("1.000"), TipoDatoExportable.DECIMAL))
+                    .contains("Totales");
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {

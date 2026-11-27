@@ -84,6 +84,8 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 
 20. **Decisiones de Mayra para REP‑11 (confirmó las 7 recomendaciones, 27/11/2026):** (1) rango `YYYY-MM` a `YYYY-MM` obligatorio e inclusivo, con tope de 36 meses y años 2000–2100; las ventas se agrupan por su fecha de venta (REP‑01, agrupación `MES`, solo confirmadas) y los costos por `periodo_anio`/`periodo_mes` (REP‑10, anulados excluidos, sin `fecha_pago`). (2) No hay filtro de tipo de costo: entran todos los tipos. (3) La tabla incluye todos los meses del rango, con 0 en los que no hay ventas o costos. (4) El resultado puede ser negativo: se muestra con signo y en rojo, sin recortarlo a 0. (5) Columnas `Período | Total vendido | Total costos | Resultado` más fila `Totales`; el gráfico combinado usa las mismas barras de vendido y costos y una línea de resultado sobre el mismo eje y meses. (6) La pantalla aclara que es un resultado simple, no un balance contable (no considera stock sin vender ni amortizaciones), y repite el aviso de que la evolución real de `Insumos` espera a `CST-06`. (7) Exportación REP‑02 con id `resultado-periodo`, archivo `resultado-periodo_<desde>_<hasta>.<ext>` y tabla sin gráfico. Solo administradores se hereda de `/api/reportes/**`. El servicio cruza los DTOs de REP‑01 y REP‑10: no consulta Venta ni Costo por su cuenta y no tocó esos módulos ni Stock.
 
+21. **Decisiones de Mayra para REP‑13 (confirmó las 7 recomendaciones, 27/11/2026):** (1) rango `AAAA-MM-DD` obligatorio e inclusivo sobre `Incidencia.fecha` y `Movimiento_Stock.fecha_hora` (`>= desde 00:00` y `< hasta + 1 día`), sin zonas, tope 5 años, con filtros combinables de tipo de incidencia, estado y artículo (producto o insumo). (2) La unidad principal es la incidencia registrada, agrupada por tipo + artículo + estado; MERMA se muestra aparte por artículo, nunca se suman cantidades afectadas con descartadas y los totales son solo conteos. (3) El cruce es agregado por `(tipo_articulo, id_articulo)` en el rango, sin JOIN 1:1; no se usan `observaciones`, igualdad de cantidades ni usuario como clave. La trazabilidad real depende de INC‑07, fuera de REP‑13. (4) Tabla `Tipo de incidencia | Artículo | Unidad | Estado | Incidencias | Cantidad afectada | Abiertas | Cerradas | Movimientos MERMA | Cantidad descartada | Posible traslape`; cada descarte se imprime una sola vez y los que no tienen incidencia van a una fila "Sin incidencia". (5) Un gráfico de barras por tipo de incidencia con eje Y = cantidad de incidencias; los descartes no se apilan. (6) Avisos: no existe vínculo 1:1 (INC‑07 pendiente), traslape sin netear, una incidencia puede afectar producto e insumo, descarte = solo `SALIDA`/`MERMA` sin `id_venta`, tipos inactivos con historial y usuarios de Incidencia sin FK. (7) Exportación REP‑02 con id `incidencias-descartes`, archivo `incidencias-descartes_<desde>_<hasta>.<ext>` y tabla sin gráfico ni texto libre. Solo administradores se hereda de `/api/reportes/**`. REP‑13 quedó implementado sin tocar los módulos Incidencias ni Stock.
+
 ### REP‑12: relevamiento de Stock (revisión solo lectura 27/11/2026, sin implementar)
 
 **No existe un registro de producción.** No hay entidad, tabla, DTO, endpoint, pantalla ni test que guarde qué producto se elaboró, cuánto se elaboró y qué insumos se consumieron. Lo más parecido es la receta estática `Producto_Insumo` de Catálogo (`ProductoInsumo.java:9-34`, `docs/modelo-datos.md:50-60`): guarda producto, insumo, `cant_necesaria` y `unidad_medida`, pero no fecha, cantidad elaborada, consumo real, lote ni usuario. Es maestro de composición, no un hecho ejecutado.
@@ -111,7 +113,7 @@ REP‑09 no puede reemplazarlo: `ReporteMovimientosStockRepository.java:52-73` c
 | Costos por tipo y evolución | Costo, TipoCosto | rango `YYYY-MM` obligatorio, tipo de costo | líneas por tipo | REP-10 | Listo |
 | Resultado del período (ventas − costos) | Venta, Costo (vía REP‑01 y REP‑10) | rango `YYYY-MM` obligatorio, sin tipo de costo | barras vendido vs costos + línea de resultado | REP-11 | Listo |
 | Producción: productos elaborados y consumo de insumos | (hoy no existe; haría falta en Stock) | rango de fechas, producto, insumo | barras por producto | REP-12 | 🔒 Sin registro de producción |
-| Incidencias y descartes | Incidencia, salidas por descarte | producto, tipo, estado | barras por tipo | REP-13 | 🔒 Incidencias |
+| Incidencias y descartes | Incidencia, Tipo_Incidencia, Producto, Insumo, Movimiento_Stock | tipo de incidencia, estado, artículo (producto/insumo) | barras por tipo | REP-13 | Listo (cruce agregado; sin vínculo 1:1) |
 | Facturación | (no existe todavía) | — | — | REP-14 | 🔒 Facturación en Ventas |
 
 Más la base técnica común: REP-02 (exportar a Excel/CSV y PDF).
@@ -142,6 +144,10 @@ entradas             = Movimiento_Stock con tipo ENTRADA (incluye motivo INICIAL
 salida por venta     = SALIDA con id_venta (VEN-10 pendiente: hoy no hay; prioriza sobre motivo)
 descartes / ajustes  = SALIDA sin id_venta con motivo MERMA / AJUSTE
 otras salidas        = SALIDA sin id_venta con motivo distinto de MERMA / AJUSTE
+incidencias          = CONTAR(Incidencia) en el rango por tipo + artículo + estado
+cantidad afectada    = SUMA(Incidencia.cantidad_afectada) dentro de cada fila
+posible traslape     = incidencias > 0 y movimientos MERMA > 0 en el mismo artículo
+                       (marca, nunca suma ni resta: no hay vínculo 1:1 hasta INC-07)
 proveedor            = Proveedor_Insumo del insumo (el movimiento no guarda proveedor)
 ```
 
@@ -163,6 +169,10 @@ proveedor            = Proveedor_Insumo del insumo (el movimiento no guarda prov
 - **Costo con fecha de pago fuera del período.** Un costo de octubre se puede pagar en noviembre: las dos fechas existen y no se valida que coincidan (`Costo.java:34-41`). REP‑10 agrupa por `periodo_mes`/`periodo_anio` (decisión 19, coincide con el reporte del PDF y con los filtros actuales de Costos); `fecha_pago` no interviene, y REP‑11 hace lo mismo (decisión 20).
 - **Costo de insumos en REP‑10.** La decisión original dice que la evolución sale del costo unitario de cada ingreso de mercadería, pero `CST-06` sigue bloqueado y `CostoService` prohíbe cargar costos con el tipo reservado `Insumos` a mano (`CostoService.java:100-111`). Mientras tanto, REP‑10 muestra esa serie en 0 con un aviso en pantalla y en el encabezado del archivo (decisión 19); no se infiere desde `Insumo.costo`, `Movimiento_Stock` ni Auditoría porque ninguno guarda el precio por ingreso y mes.
 
+- **Incidencia con MERMA del mismo artículo (REP‑13).** Se marca "posible traslape", pero no se afirma que esa incidencia generó ese descarte: no hay FK ni motivo de incidencia en `Movimiento_Stock` (INC‑07 sigue pendiente). Las cantidades afectada y descartada se muestran en columnas separadas y nunca se netean.
+- **Dos estados del mismo tipo y artículo (REP‑13).** Hay una fila abierta y una cerrada. El descarte del artículo se imprime solo en la primera fila para no contarlo dos veces; por eso la otra fila puede dar 0 MERMA aunque el artículo tenga descartes en el período.
+- **Incidencia con producto e insumo (REP‑13).** Cuenta en dos filas de la tabla, una por artículo y unidad, pero una sola vez en el gráfico y en el total de incidencias. Un descarte sin incidencia aparece en "Sin incidencia" con sus movimientos y su cantidad.
+
 ## Preguntas abiertas
 
 | Pregunta | Para quién | Qué bloquea |
@@ -171,7 +181,7 @@ proveedor            = Proveedor_Insumo del insumo (el movimiento no guarda prov
 | ~~Stock: detalle de movimientos (tipos, motivos y proveedor)~~ **Respondido por Stock el 27/11/2026 (decisión 16) y decidido por Mayra el 27/11/2026 (decisión 17)**: clasificación de columnas, `INICIAL` como entrada, filtro `ENTRADA`/`SALIDA`, selector combinado de artículo, proveedor por `Proveedor_Insumo`, agregación por unidad y exportación con rango de fechas | equipo / Mayra | Ninguna: REP-09 listo |
 | Stock 1: ¿hay registro de producción? **Respondido por revisión 27/11/2026: no existe**; siguen abiertas las 8 decisiones de modelo/carga del relevamiento de REP‑12 | equipo / clienta | REP-12 |
 | ~~Costos (todo el cuestionario 04), sobre todo 4 (período) y 5 (tipos)~~ **Respondido por el equipo de Costos 27/11/2026 ([04-costos-res.md](../tickets/costos/04-costos-res.md), decisión 18) y decidido por Mayra el 27/11/2026 (decisiones 19 y 20); REP‑10 y REP‑11 listos** | equipo / Mayra | Ninguna para REP-10 ni REP-11 |
-| Incidencias (cuestionario 09): tipos y estados | equipo | REP-13 |
+| ~~Incidencias (cuestionario 09): tipos y estados~~ **Respondido y decidido por Mayra el 27/11/2026 (decisión 21); REP‑13 listo** | equipo / Mayra | Ninguna; la trazabilidad 1:1 sigue pendiente de INC‑07 |
 | Ventas 10: ¿el vendedor puede ser alguien distinto de quien carga la venta? | equipo | REP-05 cambia de columna si es "sí" |
 | Ventas 3: si se aprueba el descuento sobre el total, ¿cómo se reparte entre productos en "ventas por producto"? Propuesta: proporcional al subtotal de cada línea | equipo | REP-03 (solo cuando se apruebe) |
 | ¿La regla 2 (fecha de la venta con su estado de hoy) les sirve, o quieren ver la anulación en el mes en que se anuló? | equipo | REP-01 y todos los de ventas |

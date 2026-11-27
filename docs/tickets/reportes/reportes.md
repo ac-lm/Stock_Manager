@@ -20,7 +20,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-10 | Costos por tipo y su evolución | REP-01 | ✅ |
 | REP-11 | Resultado del período (ventas menos costos) | REP-01, REP-10 | ✅ |
 | REP-12 | Producción: productos elaborados y consumo de insumos | REP-01 | 🔒 Falta respuesta |
-| REP-13 | Incidencias y descartes | REP-01 | 🔒 Falta respuesta |
+| REP-13 | Incidencias y descartes | REP-01 | ✅ |
 | REP-14 | Facturación | REP-01 | 🔒 Falta respuesta |
 
 ---
@@ -311,23 +311,25 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 ---
 
-## REP-13. Incidencias y descartes 🔒
+## REP-13. Incidencias y descartes ✅
 
-**Qué construir:** el administrador ve las incidencias de un período por tipo, producto y estado, y los descartes, para encontrar problemas que se repiten.
+**Qué construye:** el administrador ve las incidencias de un período por tipo, artículo y estado, y los descartes MERMA del mismo artículo, para encontrar problemas que se repiten. Implementado el 27/11/2026 con las 7 decisiones de Mayra (decisión 21 de [reportes-decisiones.md](../../especificaciones/reportes-decisiones.md)).
 
 **Bloqueado por:** 01: Ventas por período
 
-**Espera respuesta a:** Cuestionario 09 de Incidencias
+**Respondido:** tipos (`Tipo_Incidencia`, activos e inactivos con historial) y estados (`ABIERTA`/`CERRADA`) del módulo Incidencias. No se modificaron Incidencias ni Stock.
 
 **Criterios de aceptación**
-- [ ] (A confirmar con el módulo Incidencias) Tipos y estados de incidencia.
-- [ ] Filtros: rango de fechas (obligatorio), producto, tipo y estado.
-- [ ] Tabla con cantidad de incidencias y cantidad afectada por tipo y por producto.
-- [ ] Incluye los descartes de stock del período.
-- [ ] Gráfico de barras por tipo de incidencia.
-- [ ] Exporta con lo de REP-02.
+- [x] Tipos y estados de incidencia: selector con activos e inactivos con historial en el rango; estados `TODOS`, `ABIERTA` y `CERRADA`.
+- [x] Filtros: rango `AAAA-MM-DD` obligatorio e inclusivo (tope 5 años), tipo de incidencia, estado, tipo de artículo y artículo (producto o insumo).
+- [x] Tabla por `Tipo de incidencia | Artículo | Unidad | Estado | Incidencias | Cantidad afectada | Abiertas | Cerradas | Movimientos MERMA | Cantidad descartada | Posible traslape`, con totales que solo cuentan y dejan vacías las celdas de cantidades.
+- [x] Incluye los descartes del período: `SALIDA` con motivo `MERMA` y sin `id_venta` (misma definición de REP‑09). Cruce agregado por `(tipo_articulo, id_articulo)`; cada descarte se imprime una sola vez y los que no tienen incidencia se listan aparte como "Sin incidencia".
+- [x] Gráfico de barras por tipo de incidencia, eje Y = cantidad de incidencias distintas; los descartes no se apilan ni se netean.
+- [x] Exporta con REP‑02: id `incidencias-descartes`, archivo `incidencias-descartes_<desde>_<hasta>.<ext>`, tabla sin gráfico.
+- [x] Avisos en pantalla y en el archivo: no hay vínculo 1:1 (depende de INC‑07), posible traslape sin netear, incidencia con producto e insumo, descarte = solo `SALIDA`/`MERMA` sin venta, tipos inactivos con historial y usuarios de Incidencia sin FK.
+- [x] `/api/reportes/incidencias-descartes` y la pantalla `/reportes/incidencias-descartes` requieren rol `ADMINISTRADOR`.
 
-**Tablas:** Incidencia, salidas por descarte (a definir)
+**Tablas (solo lectura):** `Incidencia`, `Tipo_Incidencia`, `Producto`, `Insumo` y `Movimiento_Stock`. No se agregó ninguna tabla ni FK: la trazabilidad 1:1 queda pendiente de INC‑07.
 
 ---
 

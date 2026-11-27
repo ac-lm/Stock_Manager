@@ -67,6 +67,22 @@ function paramsMovimientosStock({
   return params.toString()
 }
 
+function paramsIncidenciasDescartes({
+  desde,
+  hasta,
+  id_tipo_incidencia,
+  estado,
+  tipo_articulo,
+  id_articulo,
+}) {
+  const params = new URLSearchParams({ desde, hasta })
+  if (id_tipo_incidencia) params.set('id_tipo_incidencia', id_tipo_incidencia)
+  if (estado && estado !== 'TODOS') params.set('estado', estado)
+  if (tipo_articulo && tipo_articulo !== 'TODOS') params.set('tipo_articulo', tipo_articulo)
+  if (id_articulo) params.set('id_articulo', id_articulo)
+  return params.toString()
+}
+
 function paramsCostosPorTipo({ desde, hasta, id_tipo_costo }) {
   const params = new URLSearchParams({ desde, hasta })
   if (id_tipo_costo) params.set('id_tipo_costo', id_tipo_costo)
@@ -97,6 +113,9 @@ export const reportesService = {
 
   movimientosStock: (filtros) =>
     api.get(`${REPORTES}/movimientos-stock?${paramsMovimientosStock(filtros)}`),
+
+  incidenciasDescartes: (filtros) =>
+    api.get(`${REPORTES}/incidencias-descartes?${paramsIncidenciasDescartes(filtros)}`),
 
   costosPorTipo: (filtros) =>
     api.get(`${REPORTES}/costos-por-tipo?${paramsCostosPorTipo(filtros)}`),
