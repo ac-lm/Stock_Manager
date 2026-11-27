@@ -14,12 +14,22 @@ function paramsVentasPorProducto({ desde, hasta, id_producto, categoria, top }) 
   return params.toString()
 }
 
+function paramsVentasPorCliente({ desde, hasta, id_cliente, tipo_cliente }) {
+  const params = new URLSearchParams({ desde, hasta })
+  if (id_cliente) params.set('id_cliente', id_cliente)
+  if (tipo_cliente) params.set('tipo_cliente', tipo_cliente)
+  return params.toString()
+}
+
 export const reportesService = {
   ventasPorPeriodo: (filtros) =>
     api.get(`${REPORTES}/ventas-por-periodo?${paramsVentasPorPeriodo(filtros)}`),
 
   ventasPorProducto: (filtros) =>
     api.get(`${REPORTES}/ventas-por-producto?${paramsVentasPorProducto(filtros)}`),
+
+  ventasPorCliente: (filtros) =>
+    api.get(`${REPORTES}/ventas-por-cliente?${paramsVentasPorCliente(filtros)}`),
 
   exportar: ({ reporte, formato, ...filtros }) => {
     const params = new URLSearchParams({ reporte, formato, ...filtros })

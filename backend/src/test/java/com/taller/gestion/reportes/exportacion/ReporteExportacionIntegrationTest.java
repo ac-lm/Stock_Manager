@@ -200,6 +200,78 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @Transactional
+    @DisplayName("REP-04: la exportación usa la tabla por cliente y los filtros de la pantalla")
+    void exportarVentasPorCliente() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Cliente (id_cliente, CUIT, nombre, telefono, email, direccion, "
+                        + "tipo_cliente, observaciones, activo, plazo_pago_dias, nombre_normalizado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                101L, null, "Ana Pérez", null, "ana@taller.local", "Calle 1",
+                "CONSUMIDOR_FINAL", null, true, null, "ana perez");
+        jdbcTemplate.update(
+                "INSERT INTO Cliente (id_cliente, CUIT, nombre, telefono, email, direccion, "
+                        + "tipo_cliente, observaciones, activo, plazo_pago_dias, nombre_normalizado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                102L, null, "Distribuidora Sol", null, "sol@taller.local", "Calle 2",
+                "GRAN_CLIENTE", null, true, null, "distribuidora sol");
+        long mostrador = jdbcTemplate.queryForObject(
+                "SELECT id_cliente FROM Cliente WHERE tipo_cliente = 'GENERICO' "
+                        + "ORDER BY id_cliente LIMIT 1", Long.class);
+
+        jdbcTemplate.update(
+                "INSERT INTO Venta (id_cliente, id_vendedor, fecha, hora, total, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                101L, 5L, Date.valueOf(LocalDate.of(2026, 10, 2)),
+                Time.valueOf(LocalTime.of(10, 30)), new BigDecimal("50.00"), "CONFIRMADA");
+        jdbcTemplate.update(
+                "INSERT INTO Venta (id_cliente, id_vendedor, fecha, hora, total, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                mostrador, 5L, Date.valueOf(LocalDate.of(2026, 10, 3)),
+                Time.valueOf(LocalTime.of(10, 30)), new BigDecimal("200.00"), "CONFIRMADA");
+        jdbcTemplate.update(
+                "INSERT INTO Venta (id_cliente, id_vendedor, fecha, hora, total, estado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                102L, 5L, Date.valueOf(LocalDate.of(2026, 10, 4)),
+                Time.valueOf(LocalTime.of(10, 30)), new BigDecimal("999.00"), "ANULADA");
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "ventas-por-cliente")
+                            .param("formato", extension)
+                            .param("desde", "2026-10-01")
+                            .param("hasta", "2026-10-31")
+                            .param("tipo_cliente", "CONSUMIDOR_FINAL"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"ventas-por-cliente_2026-10-01_2026-10-31."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Ventas por cliente")
+                    .contains("Desde: 2026-10-01")
+                    .contains("Hasta: 2026-10-31")
+                    .contains("Tipo de cliente: Consumidor final")
+                    .contains("Emitido: 26/11/2026 22:45")
+                    .contains("Cliente")
+                    .contains("Cantidad de compras")
+                    .contains("Ana Pérez")
+                    .contains("Consumidor final (mostrador)")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("200.00"), TipoDatoExportable.DECIMAL))
+                    .contains("Totales")
+                    .doesNotContain("Distribuidora Sol");
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {

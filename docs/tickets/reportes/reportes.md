@@ -11,7 +11,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-01 | Ventas por período | VEN-01 | ✅ |
 | REP-02 | Exportar un reporte a Excel, CSV y PDF | REP-01 | ✅ |
 | REP-03 | Ventas por producto y productos más vendidos | REP-01 | ✅ |
-| REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | Listo para empezar |
+| REP-04 | Ventas por cliente y por tipo de cliente | REP-01, CLI-01 | ✅ |
 | REP-05 | Ventas por vendedor | REP-01 | Listo para empezar |
 | REP-06 | Evolución de ventas y comparación estacional | REP-01 | Listo para empezar |
 | REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | Listo para empezar |
@@ -100,14 +100,18 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 **Bloqueado por:** 01: Ventas por período; CLI-01: Registrar un cliente
 
 **Criterios de aceptación**
-- [ ] Filtros: rango de fechas (obligatorio), cliente y tipo de cliente.
-- [ ] El filtro de cliente permite elegir también clientes inactivos.
-- [ ] Cada fila muestra cliente, tipo, cantidad de compras y total vendido, ordenado de mayor a menor.
-- [ ] Las ventas de mostrador aparecen en el cliente genérico "Consumidor final" como un cliente más.
-- [ ] Una vista resumida muestra el total por tipo de cliente, con gráfico de barras.
-- [ ] Exporta con lo de REP-02.
+- [x] Filtros: rango de fechas (obligatorio), cliente y tipo de cliente.
+- [x] El filtro de cliente permite elegir también clientes inactivos.
+- [x] Cada fila muestra cliente, tipo, cantidad de compras y total vendido, ordenado de mayor a menor.
+- [x] Solo cuentan las ventas confirmadas; las anuladas no, aunque se hayan anulado después.
+- [x] Las ventas de mostrador aparecen en el cliente genérico "Consumidor final" como un cliente más.
+- [x] Una vista resumida muestra el total por tipo de cliente, con gráfico de barras.
+- [x] Exporta con lo de REP-02 (Excel, CSV y PDF, con los mismos filtros).
+- [x] Solo administradores: el backend responde 403 al vendedor.
 
-**Tablas:** Venta, Cliente (solo lectura)
+**Decisiones aplicadas:** el rango es inclusivo (`fecha >= desde AND fecha < hasta + 1 día`) y el total sale de `SUM(Venta.total)`, igual que REP‑01. La "cantidad de compras" es `COUNT` de ventas confirmadas. El orden es por total vendido descendente y desempata por nombre de cliente. `GENERICO` se unifica con `CONSUMIDOR_FINAL` en el filtro y en el resumen (una sola barra "Consumidor final"), por decisión de Mayra (27/11/2026); en la tabla el genérico mantiene su propia fila con el nombre "Consumidor final (mostrador)". El resumen se calcula sobre las filas ya filtradas y siempre muestra los dos tipos, aunque estén en cero. El selector de clientes carga la lista completa con `incluirInactivos=true` (sin paginar, porque el taller tiene pocos clientes) y marca "(inactivo)" a los dados de baja. La exportación genera solo la tabla por cliente, con los filtros en el encabezado; identificador: `ventas-por-cliente`.
+
+**Tablas:** Venta, Cliente (solo lectura). No se agregaron tablas ni columnas. Si apareciera una venta con `id_cliente` nulo en la base, queda fuera de este reporte (no se modifica) y hay que avisar: el modelo la declara obligatoria.
 
 ---
 
