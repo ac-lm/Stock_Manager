@@ -54,6 +54,10 @@ const MENUS = [
         to: '/reportes/movimientos-stock',
         label: 'Entradas, salidas y descartes',
       },
+      {
+        to: '/reportes/costos-por-tipo',
+        label: 'Costos por tipo y evolución',
+      },
     ],
   },
   {

@@ -31,7 +31,7 @@ flowchart LR
 
 | # | Pregunta | Respuesta | Qué implica |
 | --- | --- | --- | --- |
-| 1 | ¿Qué reportes primero? | a) Ventas por período y por producto, stock actual y bajo mínimo, y cierres de caja | Esos son los primeros tickets. Stock ya respondió de dónde sale el saldo y el mínimo: REP‑08 y REP‑09 están listos (ver decisiones 15, 16 y 17) |
+| 1 | ¿Qué reportes primero? | a) Ventas por período y por producto, stock actual y bajo mínimo, y cierres de caja | Esos son los primeros tickets. Stock ya respondió de dónde sale el saldo y el mínimo: REP‑08 y REP‑09 están listos (ver decisiones 15, 16 y 17). Costos respondió el cuestionario 04 (decisión 18) y Mayra confirmó REP‑10 (decisión 19), que quedó implementado |
 | 2 | ¿Cómo se ven? | a) Tabla con filtros y un gráfico simple (barras o líneas) por reporte | Cada reporte = una pantalla con filtros arriba, gráfico y tabla. Gráficos con Recharts. Sin dashboard en el inicio |
 | 3 | ¿Se exportan? | c) A Excel (o CSV) y a PDF | Cada reporte exporta exactamente lo que se ve con los filtros aplicados |
 | 4 | Filtros | a) Rango de fechas siempre, y según el reporte: producto, categoría, cliente, tipo de cliente, vendedor | El rango de fechas es obligatorio en todos los reportes de movimientos; los demás filtros son opcionales |
@@ -78,6 +78,10 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 
 17. **Movimientos de stock en REP‑09:** (1) `entradas` = todas las `ENTRADA`, incluida `INICIAL`; `salidasVenta` = `SALIDA` con `id_venta` (esa marca tiene prioridad sobre el motivo, y hoy da 0 hasta que VEN‑10 descuente stock); `descartes` = `SALIDA`/`MERMA`; `ajustes` = `SALIDA`/`AJUSTE`; la 5.ª columna `otrasSalidas` = el resto de `SALIDA` (por ejemplo `COMPRA` o `DEVOLUCION`). (2) `INICIAL` cuenta como entrada, porque es el saldo que se cargó al alta. (3) El filtro "tipo de movimiento" es `ENTRADA`/`SALIDA`, no el motivo: los motivos solo clasifican columnas. (4) El filtro de artículo es un selector combinado con productos e insumos rotulados; el tipo viaja junto al id (no se mezclan ids iguales), hay una fila por artículo y los productos muestran unidad `—`. (5) El proveedor se resuelve por `Proveedor_Insumo` (relación vigente, solo insumos): al elegir uno se ocultan los productos con aviso, se listan solo sus insumos y un `EXISTS` evita duplicar movimientos de insumos con varios proveedores; la tabla no lleva columna de proveedor. (6) El gráfico de barras apiladas tiene una barra por artículo y las 5 series se apilan **dentro** de ese artículo, así nunca se mezclan unidades; los totales solo cuentan artículos y movimientos, sin sumar cantidades. (7) El rango es obligatorio sobre `fecha_hora` como fechas de calendario (`>= desde 00:00` y `< hasta + 1 día`, sin conversión de zona); la exportación reutiliza REP‑02 con id `movimientos-stock`, nombre `movimientos-stock_<desde>_<hasta>.<ext>`, tabla sin gráfico y el aviso de que las salidas por venta aparecerán con VEN‑10. La pantalla muestra el mismo aviso. Decisión de Mayra (27/11/2026).
 
+18. **Respuesta de Costos recibida para REP‑10 (revisión solo lectura 27/11/2026):** el equipo confirmó en [04-costos-res.md](../tickets/costos/04-costos-res.md) que un costo es todo gasto con monto, fecha, período y tipo (Q1); el período es `periodo_mes` + `periodo_anio` además de `fecha_pago`, lo elige quien carga y el servidor lo copia sin derivarlo (Q4, implementado); los tipos son una tabla administrable, no un enum, con `Insumos` reservado y sembrado por el sistema (Q5, implementado); la evolución de insumos debe salir del costo unitario de cada ingreso (Q7, **sin implementar**: `CST-06` sigue bloqueado); y Costos es solo de administradores (Q8). Los costos anulados no cuentan en el total y solo se listan con `incluirAnulados=true`.
+
+19. **Decisiones de Mayra para REP‑10 (confirmó las 7 recomendaciones, 27/11/2026):** (1) rango obligatorio `YYYY-MM` a `YYYY-MM`, inclusivo, sobre `periodo_anio`/`periodo_mes`; años 2000–2100, tope 36 meses y `fecha_pago` no interviene. (2) Anulados excluidos siempre. (3) Selector con activos, inactivos con costos en el rango y el reservado `Insumos`; con "Todos" se tabulan los tipos con costos en el rango más `Insumos`, y con un tipo elegido se muestra solo ese (aunque dé 0). (4) `Insumos` en 0 con aviso de `CST-06`. (5) Meses en filas, tipos en columnas y columna/fila `Total`. (6) Una línea por tipo sobre los mismos meses de la tabla. (7) Exportación REP‑02 con id `costos-por-tipo`, archivo `costos-por-tipo_<desde>_<hasta>.<ext>` y tabla con totales sin gráfico. Solo administradores se hereda de `/api/reportes/**`. REP‑10 quedó implementado sin tocar el módulo Costos; REP‑11 sigue esperando su propia decisión.
+
 ## Lista de reportes y de dónde lee cada uno
 
 | Reporte | Lee de | Filtros además de fechas | Gráfico | Ticket | Estado |
@@ -90,8 +94,8 @@ Son interpretaciones nuestras sobre lo ya decidido. Si el equipo no está de acu
 | Cierres de caja | Sesion_Caja, Cierre_Caja_Detalle, Movimiento_Caja, Usuario | usuario que cerró, estado, medio de pago | barras de faltantes y sobrantes | REP-07 | Listo |
 | Stock actual y bajo mínimo | Producto, Insumo | tipo, categoría, solo bajo mínimo | barras actual vs mínimo | REP-08 | Listo |
 | Entradas, salidas y descartes de stock | Movimiento_Stock, Producto, Insumo, Proveedor_Insumo | artículo (producto/insumo), tipo de movimiento, proveedor | barras apiladas por artículo | REP-09 | Listo |
-| Costos por tipo (insumos, sueldos, servicios) y evolución | Costo | tipo de costo | líneas por tipo | REP-10 | 🔒 Costos |
-| Resultado del período (ventas − costos) | Venta, Costo | — | barras vendido vs costos + línea de resultado | REP-11 | 🔒 Costos |
+| Costos por tipo y evolución | Costo, TipoCosto | rango `YYYY-MM` obligatorio, tipo de costo | líneas por tipo | REP-10 | Listo |
+| Resultado del período (ventas − costos) | Venta, Costo | — | barras vendido vs costos + línea de resultado | REP-11 | 🔒 Falta decisión de Mayra sobre REP-11 |
 | Producción: productos elaborados y consumo de insumos | registro de producción | producto, insumo | barras | REP-12 | 🔒 Stock pregunta 1 |
 | Incidencias y descartes | Incidencia, salidas por descarte | producto, tipo, estado | barras por tipo | REP-13 | 🔒 Incidencias |
 | Facturación | (no existe todavía) | — | — | REP-14 | 🔒 Facturación en Ventas |
@@ -108,6 +112,8 @@ vendido por producto = SUMA(Detalle_Venta.subtotal)  de líneas de ventas confir
 cantidad vendida     = SUMA(Detalle_Venta.cantidad)  agrupada por producto
                        (y por unidad cuando exista Producto.unidad_venta; hoy no existe, ver REP-03)
 resultado            = total vendido del período − total de costos del período
+costo por mes/tipo   = SUMA(Costo.monto) por periodo_anio/periodo_mes y tipo,
+                       excluyendo anulados (meses sin costos = 0)
 diferencia de cierre = declarado − esperado        (Cierre_Caja_Detalle)
 faltante             = |diferencia| si diferencia < 0, si no 0
 sobrante             = diferencia si diferencia > 0, si no 0
@@ -125,7 +131,7 @@ otras salidas        = SALIDA sin id_venta con motivo distinto de MERMA / AJUSTE
 proveedor            = Proveedor_Insumo del insumo (el movimiento no guarda proveedor)
 ```
 
-**Resultado** compara el período de la venta (su fecha) con el período del costo. Cómo se asigna un costo a un período depende de Costos pregunta 4 (mes y año, o fecha de pago). Es un resultado **simple**, no contable: no considera stock sin vender ni amortizaciones. Conviene aclararlo en la pantalla para que nadie lo lea como un balance.
+**Resultado** compara el período de la venta (su fecha) con el período del costo: la pregunta 4 de Costos quedó respondida en [04-costos-res.md](../tickets/costos/04-costos-res.md) e implementada con `periodo_mes` y `periodo_anio` además de `fecha_pago` (`Costo.java:34-41`, `CostoService.java:51-77`). REP‑10 ya decidió el rango en meses (`YYYY-MM`) sobre `periodo_anio`/`periodo_mes`, sin `fecha_pago` (decisión 19); REP‑11 debe usar la misma convención para que los números coincidan. Es un resultado **simple**, no contable: no considera stock sin vender ni amortizaciones. Conviene aclararlo en la pantalla para que nadie lo lea como un balance.
 
 ## Ejemplos para entender los casos borde
 
@@ -140,6 +146,8 @@ proveedor            = Proveedor_Insumo del insumo (el movimiento no guarda prov
 - **Insumo con stock 2 kg y mínimo 5 kg.** Está bajo mínimo, la falta es `3 kg` y el gráfico lo muestra con barras de 2 y 5. Si se elige la categoría "Bebidas", ese insumo desaparece (no tiene categoría) y la pantalla lo avisa.
 - **Salida por venta en REP‑09.** Hoy no existe: `VEN‑10` todavía no descuenta stock al confirmar y `id_venta` solo aparece en las devoluciones por anulación (`ENTRADA`/`DEVOLUCION`). La columna "salidas por venta" dará 0 hasta que se implemente `VEN‑10`; no se infiere una venta desde `observaciones` ni desde el motivo.
 - **Proveedor en REP‑09.** `Movimiento_Stock` no sabe qué proveedor entregó una entrada: solo se puede filtrar por los proveedores **vigentes** del insumo en `Proveedor_Insumo`. Un producto no tiene proveedor y un insumo puede tener varios; no se suma una misma entrada dos veces si el insumo está asignado a más de un proveedor.
+- **Costo con fecha de pago fuera del período.** Un costo de octubre se puede pagar en noviembre: las dos fechas existen y no se valida que coincidan (`Costo.java:34-41`). REP‑10 agrupa por `periodo_mes`/`periodo_anio` (decisión 19, coincide con el reporte del PDF y con los filtros actuales de Costos); `fecha_pago` no interviene, y REP‑11 debe hacer lo mismo.
+- **Costo de insumos en REP‑10.** La decisión original dice que la evolución sale del costo unitario de cada ingreso de mercadería, pero `CST-06` sigue bloqueado y `CostoService` prohíbe cargar costos con el tipo reservado `Insumos` a mano (`CostoService.java:100-111`). Mientras tanto, REP‑10 muestra esa serie en 0 con un aviso en pantalla y en el encabezado del archivo (decisión 19); no se infiere desde `Insumo.costo`, `Movimiento_Stock` ni Auditoría porque ninguno guarda el precio por ingreso y mes.
 
 ## Preguntas abiertas
 
@@ -148,7 +156,7 @@ proveedor            = Proveedor_Insumo del insumo (el movimiento no guarda prov
 | Facturación (ya confirmado que la emite el sistema): ¿factura electrónica de ARCA o comprobante interno? ¿Monotributo o responsable inscripto? ¿Toda venta o solo a pedido? ¿Entra en el alcance de la PPS? **Tiene que decidirlo Ventas (Ivan) y actualizar Ventas 15** | equipo / clienta | REP-14. También cambia Venta y Cliente |
 | ~~Stock: detalle de movimientos (tipos, motivos y proveedor)~~ **Respondido por Stock el 27/11/2026 (decisión 16) y decidido por Mayra el 27/11/2026 (decisión 17)**: clasificación de columnas, `INICIAL` como entrada, filtro `ENTRADA`/`SALIDA`, selector combinado de artículo, proveedor por `Proveedor_Insumo`, agregación por unidad y exportación con rango de fechas | equipo / Mayra | Ninguna: REP-09 listo |
 | Stock 1: ¿hay registro de producción? | equipo / clienta | REP-12 |
-| Costos (todo el cuestionario 04), sobre todo 4 (período) y 5 (tipos) | equipo / clienta | REP-10, REP-11 |
+| ~~Costos (todo el cuestionario 04), sobre todo 4 (período) y 5 (tipos)~~ **Respondido por el equipo de Costos 27/11/2026 ([04-costos-res.md](../tickets/costos/04-costos-res.md), decisión 18) y decidido por Mayra el 27/11/2026 (decisión 19); REP‑10 listo** | equipo / Mayra | Ninguna para REP-10; REP-11 espera su decisión |
 | Incidencias (cuestionario 09): tipos y estados | equipo | REP-13 |
 | Ventas 10: ¿el vendedor puede ser alguien distinto de quien carga la venta? | equipo | REP-05 cambia de columna si es "sí" |
 | Ventas 3: si se aprueba el descuento sobre el total, ¿cómo se reparte entre productos en "ventas por producto"? Propuesta: proporcional al subtotal de cada línea | equipo | REP-03 (solo cuando se apruebe) |

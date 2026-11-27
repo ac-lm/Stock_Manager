@@ -67,6 +67,12 @@ function paramsMovimientosStock({
   return params.toString()
 }
 
+function paramsCostosPorTipo({ desde, hasta, id_tipo_costo }) {
+  const params = new URLSearchParams({ desde, hasta })
+  if (id_tipo_costo) params.set('id_tipo_costo', id_tipo_costo)
+  return params.toString()
+}
+
 export const reportesService = {
   ventasPorPeriodo: (filtros) =>
     api.get(`${REPORTES}/ventas-por-periodo?${paramsVentasPorPeriodo(filtros)}`),
@@ -91,6 +97,9 @@ export const reportesService = {
 
   movimientosStock: (filtros) =>
     api.get(`${REPORTES}/movimientos-stock?${paramsMovimientosStock(filtros)}`),
+
+  costosPorTipo: (filtros) =>
+    api.get(`${REPORTES}/costos-por-tipo?${paramsCostosPorTipo(filtros)}`),
 
   exportar: ({ reporte, formato, ...filtros }) => {
     const params = new URLSearchParams({ reporte, formato, ...filtros })

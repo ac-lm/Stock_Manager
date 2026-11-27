@@ -37,7 +37,10 @@ public class ExportadorReportes {
         }
 
         ArchivoExportadoDTO archivo = exportador.exportar(reporte);
-        String nombre = reporte.id() + "_" + reporte.desde() + "_" + reporte.hasta()
+        String rango = reporte.nombreRango() == null
+                ? reporte.desde() + "_" + reporte.hasta()
+                : reporte.nombreRango();
+        String nombre = reporte.id() + "_" + rango
                 + "." + solicitud.formato().extension();
         return new ArchivoExportadoDTO(
                 archivo.contenido(), archivo.contentType(), nombre);

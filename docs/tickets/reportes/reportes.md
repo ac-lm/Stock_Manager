@@ -17,8 +17,8 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 | REP-07 | Reporte de cierres de caja | REP-01, CAJA-05 | ✅ |
 | REP-08 | Stock actual y productos bajo mínimo | REP-01 | ✅ |
 | REP-09 | Entradas, salidas y descartes de stock | REP-01 | ✅ |
-| REP-10 | Costos por tipo y su evolución | REP-01 | 🔒 Falta respuesta |
-| REP-11 | Resultado del período (ventas menos costos) | REP-01, REP-10 | 🔒 Falta respuesta |
+| REP-10 | Costos por tipo y su evolución | REP-01 | ✅ |
+| REP-11 | Resultado del período (ventas menos costos) | REP-01, REP-10 | 🔒 Falta decisión de Mayra sobre REP-11 |
 | REP-12 | Producción: productos elaborados y consumo de insumos | REP-01 | 🔒 Falta respuesta |
 | REP-13 | Incidencias y descartes | REP-01 | 🔒 Falta respuesta |
 | REP-14 | Facturación | REP-01 | 🔒 Falta respuesta |
@@ -237,22 +237,27 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 ---
 
-## REP-10. Costos por tipo y su evolución 🔒
+## REP-10. Costos por tipo y su evolución ✅
 
-**Qué construir:** el administrador ve los costos de un período separados por tipo (insumos, sueldos, servicios, otros) y cómo evolucionan mes a mes, incluido el costo de los insumos.
+**Qué construir:** el administrador ve los costos de un período separados por tipo y cómo evolucionan mes a mes, incluida la evolución del costo de insumos.
 
 **Bloqueado por:** 01: Ventas por período
 
-**Espera respuesta a:** Cuestionario 04 de Costos
+**Respuesta recibida (revisión solo lectura de Costos, 27/11/2026):** el equipo ya respondió el cuestionario 04 en [04-costos-res.md](../costos/04-costos-res.md), y el módulo quedó implementado según el backlog de Costos. Un **costo** es todo gasto del taller con `descripcion`, `monto` (`numeric(12,2)`), `fecha_pago`, `periodo_mes`, `periodo_anio`, tipo y usuario que lo carga (`Costo.java:13-66`), con baja lógica (`anulado`, motivo, fecha y usuario de anulación). El período se guarda **en mes y año** además de la fecha de pago, lo elige quien carga y el servidor lo copia sin derivarlo ni validar que coincida con `fecha_pago` (`CostoCreateDTO.java:30-47`, `CostoService.java:51-77`). Los filtros actuales de `GET /api/costos` y `/api/costos/total` usan `periodo_mes`/`periodo_anio`, nunca `fecha_pago` (`CostoRepository.java:13-36`). Los tipos **no son un enum**: son una tabla administrable (`TipoCosto`, con `activo` y `reservado`); el único tipo sembrado es `Insumos`, reservado, que el sistema genera y no se puede cargar a mano ni editar (`TipoCostoInsumosInitializer.java:14-49`, `CostoService.java:100-111`, `TipoCostoService.java:58-65`). No hay tipos fijos `Sueldos`, `Servicios` ni `Otros`: si hacen falta, los crea un administrador. Los costos anulados no cuentan: el total siempre los excluye y el listado solo los incluye con `incluirAnulados=true`. La **evolución del costo de insumos** quedó decidida desde el costo unitario de cada ingreso de mercadería (`04-costos-res.md:27-28`), pero **hoy no está implementada**: `CST-06` sigue bloqueado, no hay tabla de ingreso de mercadería y solo quedan los campos reservados `id_ingreso_mercaderia` en `Costo` y `Movimiento_Stock`. `Insumo.costo` es un único valor que se sobrescribe en cada PUT (`InsumoService.java:98-100`); `Movimiento_Stock` guarda cantidades pero ningún precio ni monto; la auditoría registra cambios de `Insumo.costo` como JSON, pero su API no filtra por insumo ni agrupa por mes (`AuditoriaEntityListener.java:54-84`, `AuditoriaRepository.java:24-53`). Por lo tanto, hasta `CST-06` no hay una fuente completa para la serie de insumos; el resto de los tipos sí puede reportarse desde `Costo`.
+
+**Decisiones de Mayra confirmadas el 27/11/2026 (las 7 recomendaciones):** (1) el rango es obligatorio y se expresa como `AAAA-MM` a `AAAA-MM`, inclusivo, sobre `periodo_anio` y `periodo_mes`; va de 2000 a 2100, con tope de 36 meses, y `fecha_pago` no interviene. (2) Los costos anulados se excluyen siempre. (3) El selector de tipos muestra los activos, más los inactivos que tengan costos en el rango y el reservado `Insumos`; con "Todos" la tabla muestra los tipos con costos en el rango y siempre `Insumos`, y con un tipo elegido muestra solo ese tipo (aunque dé 0). (4) La serie de `Insumos` se muestra en 0 con el aviso de que la evolución real espera a `CST-06`. (5) La tabla lleva meses en filas, tipos en columnas y una columna/fila `Total`. (6) El gráfico de líneas dibuja una línea por tipo sobre los mismos meses de la tabla. (7) La exportación reutiliza REP‑02 con id `costos-por-tipo`, nombre `costos-por-tipo_<desde>_<hasta>.<ext>` y tabla con totales, sin gráfico. Solo administradores se hereda de `/api/reportes/**`.
 
 **Criterios de aceptación**
-- [ ] (A confirmar con Costos 1, 4, 5 y 7) Qué es un costo, cómo se asigna a un período, qué tipos hay y de dónde sale la evolución del costo de insumos.
-- [ ] Filtros: rango de períodos (obligatorio) y tipo de costo.
-- [ ] Tabla con el total por tipo y por mes.
-- [ ] Gráfico de líneas, una por tipo de costo.
-- [ ] Exporta con lo de REP-02.
+- [x] Rango de períodos `AAAA-MM` obligatorio, inclusivo, con tope de 36 meses y años 2000–2100; `fecha_pago` no interviene.
+- [x] Filtros: rango de períodos (obligatorio) y tipo de costo.
+- [x] Tabla con el total por tipo y por mes, completando con 0 los meses vacíos.
+- [x] Gráfico de líneas, una por tipo de costo.
+- [x] Los anulados quedan excluidos.
+- [x] La evolución de insumos se muestra en 0 con aviso de `CST-06`.
+- [x] Exporta con lo de REP-02 (Excel, CSV y PDF, con los mismos filtros).
+- [x] Solo administradores (backend 403 para otros roles, no alcanza con ocultar el menú).
 
-**Tablas:** Costo (a definir por Costos)
+**Tablas:** `Costo` y `TipoCosto` (solo lectura). Sin tablas nuevas; no se modificó el módulo Costos.
 
 ---
 
@@ -262,7 +267,7 @@ Cada ticket es una **rebanada vertical** (consulta, backend y pantalla) que se p
 
 **Bloqueado por:** 01: Ventas por período; 10: Costos por tipo y su evolución
 
-**Espera respuesta a:** Costos 4: cómo se asigna un costo a un período
+**Respuesta de Costos recibida:** la pregunta 4 (período) quedó respondida en [04-costos-res.md](../costos/04-costos-res.md) e implementada con `periodo_mes` y `periodo_anio`; REP‑10 ya está listo con el rango en meses y sin `fecha_pago`, y REP‑11 espera la decisión de Mayra para usar la misma consulta de costos.
 
 **Criterios de aceptación**
 - [ ] Por cada mes: total vendido (ventas confirmadas), total de costos y resultado = vendido − costos.

@@ -21,6 +21,14 @@ public interface ReporteExportable {
 
     LocalDate hasta();
 
+    /**
+     * Parte del nombre de archivo que identifica el rango. Por defecto son las dos fechas;
+     * los reportes que filtran por mes la sobrescriben con {@code YYYY-MM_YYYY-MM}.
+     */
+    default String nombreRango() {
+        return null;
+    }
+
     List<ColumnaExportable> columnas();
 
     /** Cada fila tiene un valor por columna, en el mismo orden. */

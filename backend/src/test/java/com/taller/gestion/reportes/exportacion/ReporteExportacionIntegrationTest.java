@@ -596,6 +596,72 @@ class ReporteExportacionIntegrationTest {
         }
     }
 
+    @Test
+    @Transactional
+    @DisplayName("REP-10: la descarga usa la tabla por mes y tipo y el nombre lleva períodos")
+    void exportarCostosPorTipo() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO Usuario (id_usuario, nombre, email, password, rol, activo) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)",
+                901L, "Ana Costos", "anaCostosExport@taller.local", "hash", "ADMINISTRADOR", true);
+        jdbcTemplate.update(
+                "INSERT INTO tipo_costo (id_tipo_costo, nombre, nombre_normalizado, activo, "
+                        + "reservado) VALUES (?, ?, ?, ?, ?)",
+                901L, "Alquiler", "alquiler", true, false);
+        jdbcTemplate.update(
+                "INSERT INTO tipo_costo (id_tipo_costo, nombre, nombre_normalizado, activo, "
+                        + "reservado) VALUES (?, ?, ?, ?, ?)",
+                902L, "Luz", "luz", true, false);
+        jdbcTemplate.update(
+                "INSERT INTO Costo (id_costo, id_tipo_costo, descripcion, monto, fecha_pago, "
+                        + "periodo_mes, periodo_anio, id_usuario, anulado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                901L, 901L, "Alquiler octubre", new BigDecimal("120.00"),
+                Date.valueOf(LocalDate.of(2026, 10, 15)), 10, 2026, 901L, false);
+        jdbcTemplate.update(
+                "INSERT INTO Costo (id_costo, id_tipo_costo, descripcion, monto, fecha_pago, "
+                        + "periodo_mes, periodo_anio, id_usuario, anulado) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                902L, 902L, "Luz noviembre", new BigDecimal("30.00"),
+                Date.valueOf(LocalDate.of(2026, 11, 20)), 11, 2026, 901L, false);
+
+        for (String[] formato : List.of(
+                new String[]{"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                new String[]{"csv", "text/csv;charset=UTF-8"},
+                new String[]{"pdf", "application/pdf"})) {
+            String extension = formato[0];
+            MvcResult resultado = mockMvc.perform(get("/api/reportes/exportar")
+                            .param("reporte", "costos-por-tipo")
+                            .param("formato", extension)
+                            .param("desde", "2026-10")
+                            .param("hasta", "2026-11"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string(HttpHeaders.CONTENT_TYPE, formato[1]))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"costos-por-tipo_2026-10_2026-11."
+                                    + extension + "\""))
+                    .andReturn();
+
+            String texto = textoExportado(extension, resultado.getResponse().getContentAsByteArray());
+            assertThat(texto).describedAs("contenido " + extension)
+                    .contains("Reporte de costos por tipo y su evolución")
+                    .contains("Períodos: 2026-10 a 2026-11")
+                    .contains("Tipo de costo: Todos")
+                    .contains("Costos anulados: excluidos")
+                    .contains("Alqu")
+                    .contains("Insu")
+                    .contains("Luz")
+                    .contains("oct 2026")
+                    .contains("nov 2026")
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("120.00"), TipoDatoExportable.DECIMAL))
+                    .contains(formateadorValores.formatear(
+                            new BigDecimal("30.00"), TipoDatoExportable.DECIMAL))
+                    .contains("CST-06")
+                    .contains("Totales");
+        }
+    }
+
     /** Convierte cada archivo en texto para poder compararlo con el DTO de la pantalla. */
     private String textoExportado(String formato, byte[] contenido) throws Exception {
         return switch (formato) {
