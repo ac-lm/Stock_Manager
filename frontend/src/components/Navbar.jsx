@@ -2,30 +2,62 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth-context'
 
-const LINKS = [
-  { to: '/insumos', label: 'Insumos' },
-  { to: '/productos', label: 'Productos' },
-  { stock: true },
-  { to: '/proveedores', label: 'Proveedores' },
-  { to: '/clientes', label: 'Clientes' },
-  { to: '/ventas', label: 'Ventas' },
-  { to: '/caja', label: 'Caja' },
-]
-
-const LINKS_STOCK = [
-  { to: '/stock/insumos', label: 'Stock de insumos' },
-  { to: '/stock/productos', label: 'Stock de productos' },
-]
-
-const LINKS_ADMIN = [
-  { to: '/caja/revision', label: 'Revisión de caja' },
-  { to: '/costos', label: 'Costos' },
-  { to: '/usuarios', label: 'Usuarios' },
-  { to: '/auditoria', label: 'Auditoría' },
-  { to: '/reportes/ventas-por-periodo', label: 'Ventas por período' },
-  { to: '/reportes/ventas-por-producto', label: 'Ventas por producto' },
-  { to: '/reportes/ventas-por-cliente', label: 'Ventas por cliente' },
-  { to: '/reportes/ventas-por-vendedor', label: 'Ventas por vendedor' },
+// Configuración del menú. Un grupo con un solo enlace visible se renderiza como link directo.
+// "soloAdmin" se aplica al grupo entero o a un item suelto (Revisión de caja).
+const MENUS = [
+  {
+    id: 'inventario',
+    label: 'Inventario',
+    items: [
+      { to: '/insumos', label: 'Insumos' },
+      { to: '/productos', label: 'Productos' },
+      { to: '/stock/insumos', label: 'Stock de insumos' },
+      { to: '/stock/productos', label: 'Stock de productos' },
+      { to: '/proveedores', label: 'Proveedores' },
+    ],
+  },
+  {
+    id: 'ventas',
+    label: 'Ventas',
+    items: [
+      { to: '/ventas', label: 'Ventas' },
+      { to: '/clientes', label: 'Clientes' },
+    ],
+  },
+  {
+    id: 'caja',
+    label: 'Caja',
+    items: [
+      { to: '/caja', label: 'Caja' },
+      { to: '/caja/revision', label: 'Revisión de caja', soloAdmin: true },
+    ],
+  },
+  {
+    id: 'costos',
+    label: 'Costos',
+    to: '/costos',
+    soloAdmin: true,
+  },
+  {
+    id: 'reportes',
+    label: 'Reportes',
+    soloAdmin: true,
+    items: [
+      { to: '/reportes/ventas-por-periodo', label: 'Ventas por período' },
+      { to: '/reportes/ventas-por-producto', label: 'Ventas por producto' },
+      { to: '/reportes/ventas-por-cliente', label: 'Ventas por cliente' },
+      { to: '/reportes/ventas-por-vendedor', label: 'Ventas por vendedor' },
+    ],
+  },
+  {
+    id: 'administracion',
+    label: 'Administración',
+    soloAdmin: true,
+    items: [
+      { to: '/usuarios', label: 'Usuarios' },
+      { to: '/auditoria', label: 'Auditoría' },
+    ],
+  },
 ]
 
 const ROLES = {
@@ -33,28 +65,75 @@ const ROLES = {
   VENDEDOR: 'Vendedor',
 }
 
+function itemsVisibles(menu, esAdmin) {
+  if (menu.soloAdmin && !esAdmin) return []
+  return (menu.items ?? []).filter((item) => !item.soloAdmin || esAdmin)
+}
+
+// El grupo se resalta mientras la ruta actual sea el enlace o una ruta hija (ej. /caja/historial).
+function grupoActivo(items, pathname) {
+  return items.some((item) => pathname === item.to || pathname.startsWith(`${item.to}/`))
+}
+
+function clasesEnlace({ isActive }) {
+  return isActive ? 'app-link active' : 'app-link'
+}
+
+function GrupoDesplegable({ menu, items, pathname, abierto, onToggle, onNavigate }) {
+  const activo = grupoActivo(items, pathname)
+
+  return (
+    <div className="nav-dropdown">
+      <button
+        type="button"
+        className={`app-link nav-dropdown-toggle${activo || abierto ? ' active' : ''}`}
+        onClick={onToggle}
+        aria-haspopup="true"
+        aria-expanded={abierto}
+      >
+        {menu.label} <span className="nav-caret" aria-hidden="true">▾</span>
+      </button>
+      {abierto && (
+        <div className="nav-submenu">
+          {items.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                isActive ? 'nav-submenu-link active' : 'nav-submenu-link'
+              }
+              onClick={onNavigate}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Navbar() {
   const { usuario, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [saliendo, setSaliendo] = useState(false)
-  // El submenu queda asociado a la ruta en que se abrió: al navegar se cierra solo.
-  const [rutaConStockAbierto, setRutaConStockAbierto] = useState(null)
-  const stockRef = useRef(null)
-  const enRutaStock = location.pathname.startsWith('/stock/')
-  const stockAbierto = rutaConStockAbierto === location.pathname
+  // Solo un grupo abierto a la vez. Se guarda la ruta en que se abrió: al navegar,
+  // esa combinación deja de coincidir y el submenú se cierra solo.
+  const [grupoAbierto, setGrupoAbierto] = useState(null)
+  const navRef = useRef(null)
+  const hayGrupoAbierto = grupoAbierto !== null && grupoAbierto.ruta === location.pathname
 
-  // Cerrar al hacer clic fuera o con Escape.
   useEffect(() => {
-    if (!stockAbierto) return undefined
+    if (!hayGrupoAbierto) return undefined
 
     const cerrarAlClickearFuera = (event) => {
-      if (stockRef.current && !stockRef.current.contains(event.target)) {
-        setRutaConStockAbierto(null)
+      if (navRef.current && !navRef.current.contains(event.target)) {
+        setGrupoAbierto(null)
       }
     }
     const cerrarConEscape = (event) => {
-      if (event.key === 'Escape') setRutaConStockAbierto(null)
+      if (event.key === 'Escape') setGrupoAbierto(null)
     }
 
     document.addEventListener('mousedown', cerrarAlClickearFuera)
@@ -63,11 +142,12 @@ function Navbar() {
       document.removeEventListener('mousedown', cerrarAlClickearFuera)
       document.removeEventListener('keydown', cerrarConEscape)
     }
-  }, [stockAbierto])
+  }, [hayGrupoAbierto])
 
   if (!usuario) return null
 
-  const links = usuario.rol === 'ADMINISTRADOR' ? [...LINKS, ...LINKS_ADMIN] : LINKS
+  const esAdmin = usuario.rol === 'ADMINISTRADOR'
+  const cerrar = () => setGrupoAbierto(null)
 
   const cerrarSesion = async () => {
     setSaliendo(true)
@@ -82,53 +162,44 @@ function Navbar() {
   return (
     <header className="app-nav">
       <div className="app-brand">Stock Manager</div>
-      <nav className="app-links">
-        {links.map((link) => {
-          if (link.stock) {
+      <nav className="app-links" ref={navRef}>
+        {MENUS.map((menu) => {
+          if (menu.soloAdmin && !esAdmin) return null
+
+          if (menu.to) {
             return (
-              <div className="nav-dropdown" key="stock" ref={stockRef}>
-                <button
-                  type="button"
-                  className={`app-link nav-dropdown-toggle${
-                    enRutaStock || stockAbierto ? ' active' : ''
-                  }`}
-                  onClick={() =>
-                    setRutaConStockAbierto((ruta) =>
-                      ruta === location.pathname ? null : location.pathname)
-                  }
-                  aria-haspopup="true"
-                  aria-expanded={stockAbierto}
-                >
-                  Stock <span className="nav-caret" aria-hidden="true">▾</span>
-                </button>
-                {stockAbierto && (
-                  <div className="nav-submenu">
-                    {LINKS_STOCK.map((sublink) => (
-                      <NavLink
-                        key={sublink.to}
-                        to={sublink.to}
-                        className={({ isActive }) =>
-                          isActive ? 'nav-submenu-link active' : 'nav-submenu-link'
-                        }
-                        onClick={() => setRutaConStockAbierto(null)}
-                      >
-                        {sublink.label}
-                      </NavLink>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <NavLink key={menu.id} to={menu.to} className={clasesEnlace}>
+                {menu.label}
+              </NavLink>
+            )
+          }
+
+          const items = itemsVisibles(menu, esAdmin)
+          if (items.length === 0) return null
+
+          if (items.length === 1) {
+            return (
+              <NavLink key={menu.id} to={items[0].to} className={clasesEnlace}>
+                {items[0].label}
+              </NavLink>
             )
           }
 
           return (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) => (isActive ? 'app-link active' : 'app-link')}
-            >
-              {link.label}
-            </NavLink>
+            <GrupoDesplegable
+              key={menu.id}
+              menu={menu}
+              items={items}
+              pathname={location.pathname}
+              abierto={hayGrupoAbierto && grupoAbierto.id === menu.id}
+              onToggle={() =>
+                setGrupoAbierto((actual) =>
+                  actual?.id === menu.id && actual.ruta === location.pathname
+                    ? null
+                    : { id: menu.id, ruta: location.pathname })
+              }
+              onNavigate={cerrar}
+            />
           )
         })}
       </nav>
