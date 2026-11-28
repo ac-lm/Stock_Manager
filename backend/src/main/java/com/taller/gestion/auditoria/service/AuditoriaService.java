@@ -118,7 +118,7 @@ public class AuditoriaService {
     /* ------------- Registro automático (lo usan los listeners, no la API) ------------- */
 
     /** Lo llama el listener de JPA después de un insert/update/delete de otra entidad. */
-    @Transactional
+    @Transactional(noRollbackFor = RuntimeException.class)
     public void registrarAutomatico(AccionAuditoria accion, String tabla, Long id_registro,
                                     Map<String, Object> cambios, String detalle) {
         Actor actor = actorDeLaSesion(false);
@@ -171,12 +171,19 @@ public class AuditoriaService {
         }
 
         String nombre = autenticacion.getName();
-        try {
-            return new Actor(usuarioService.buscarPorEmail(nombre).id_usuario(), nombre);
-        } catch (RuntimeException ex) {
-            if (obligatorio) {
+        if (obligatorio) {
+            try {
+                return new Actor(usuarioService.buscarPorEmail(nombre).id_usuario(), nombre);
+            } catch (RuntimeException ex) {
                 throw new RecursoNoEncontradoException("Usuario autenticado no encontrado: " + nombre);
             }
+        }
+        // Camino del listener: nunca consultar la entidad ni lanzar excepciones aquí,
+        // porque se está ejecutando dentro del flush de la operación que se audita.
+        try {
+            Long id = usuarioService.buscarIdParaAuditoria(nombre).orElse(null);
+            return new Actor(id, nombre);
+        } catch (RuntimeException ex) {
             return new Actor(null, nombre);
         }
     }

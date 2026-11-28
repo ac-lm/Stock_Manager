@@ -6,10 +6,6 @@ import com.taller.gestion.auditoria.entity.Auditoria;
 import com.taller.gestion.auditoria.repository.AuditoriaRepository;
 import com.taller.gestion.costos.dto.CostoCreateDTO;
 import com.taller.gestion.costos.dto.CostoUpdateDTO;
-import com.taller.gestion.usuario.dto.UsuarioResponseDTO;
-import com.taller.gestion.usuario.entity.Rol;
-import com.taller.gestion.usuario.entity.Usuario;
-import com.taller.gestion.usuario.service.UsuarioService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -35,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -74,21 +68,13 @@ class CostoAuditoriaIntegrationTest {
     @Autowired
     private AuditoriaRepository auditoriaRepository;
 
-    @MockitoBean
-    private UsuarioService usuarioService;
-
     private Long idUsuario;
     private Long idTipo;
     private Long idCosto;
 
     @BeforeEach
     void prepararDatos() {
-        // El listener consulta el usuario dentro del flush; se evita esa consulta para no
-        // modificar la cola de acciones de Hibernate mientras se está vaciando.
-        when(usuarioService.buscarPorEmail(EMAIL)).thenReturn(new UsuarioResponseDTO(
-                931L, "Ana Costo", EMAIL, Rol.ADMINISTRADOR, true));
-        when(usuarioService.obtenerAutenticado()).thenReturn(new Usuario(
-                931L, "Ana Costo", EMAIL, "hash", Rol.ADMINISTRADOR, true));
+        // El usuario existe en la BD para que el listener real lo encuentre por email.
         idUsuario = prepararUsuario();
         idTipo = prepararTipo();
     }

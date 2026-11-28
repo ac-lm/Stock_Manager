@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -88,6 +89,18 @@ public class UsuarioService {
         return usuarioRepository.findByEmailIgnoreCase(email)
                 .map(this::mapearAResponse)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+    }
+
+    /**
+     * Para la auditoría del listener: solo consulta el id, sin transacción propia ni flush,
+     * para no interferir con el insert que se está registrando. Si el email no existe,
+     * devuelve {@link Optional#empty()} en lugar de lanzar una excepción.
+     */
+    public Optional<Long> buscarIdParaAuditoria(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return usuarioRepository.buscarIdPorEmailSinFlush(email);
     }
 
     @Transactional
